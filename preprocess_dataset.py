@@ -38,6 +38,9 @@ MAX_LABELS = 22
 def setMaxLabels(val):
     MAX_LABELS = val
 
+def setImgSize(size):
+    IMG_SIZE = size
+
 """
 Getter function to get the training dataset given the source path
 Parameters:
