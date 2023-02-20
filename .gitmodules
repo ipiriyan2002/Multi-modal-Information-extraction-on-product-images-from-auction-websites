@@ -1,0 +1,3 @@
+[submodule "cord-v2"]
+	path = cord-v2
+	url = https://github.com/clovaai/cord.git
