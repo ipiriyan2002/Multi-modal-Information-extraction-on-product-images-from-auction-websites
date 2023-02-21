@@ -26,21 +26,17 @@ print("LIBRARIES INSTALLED!")
 
 # Constant Values to use in function
 dataset_path = "./cord-v2/data/"
-IMG_SIZE = 256
+IMG_SIZE = 512
 MAX_LABELS = 22
 
 
+def getMaxLabels():
+    return MAX_LABELS
 
+def getImgSize():
+    return IMG_SIZE
 
 # In[133]:
-
-
-def setMaxLabels(val):
-    MAX_LABELS = val
-
-def setImgSize(size):
-    IMG_SIZE = size
-
 """
 Getter function to get the training dataset given the source path
 Parameters:
