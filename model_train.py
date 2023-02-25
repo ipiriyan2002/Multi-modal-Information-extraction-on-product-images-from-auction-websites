@@ -21,7 +21,7 @@ import TextModel as tm
 
 
 MAX_LABELS = pre.getMaxLabels()
-IMG_SIZE = pre.getImgSize()
+IMG_WIDTH, IMG_HEIGHT = pre.getImgSize()
 
 
 # In[4]:
@@ -42,12 +42,8 @@ print("Training Data: Processed")
 
 
 #CORE CONSTANTS
-IMG_INDEX = 1 #Min is 0, Max is 799
-BATCH = 16
-EPOCHS = 50
-L_RATE = 0.001
-pos_alpha = 1.2
-neg_alpha = 0.2
+BATCH = tm.getBatch()
+EPOCHS = tm.getEpochs()
 
 
 # In[8]:
@@ -75,11 +71,16 @@ def train(save_path, dataset, epoch_range):
 
 
 
-if __name__ = "__main__":
-    save_path = "./Saved Model/Model_BASE_50/"
-    os.mkdir(save_path)
+if __name__ == "__main__":
+    save_path = "./Saved Model/Model_BASE_50"
+    os.mkdirs(save_path)
     
-    train(save_path, training_dataset, EPOCHS)
+    save_path = save_path + "/"
+    
+    model, history = train(save_path, training_dataset, EPOCHS)
 
+    model_save_path = save_path + "model"
+    os.mkdir(model_save_path)
+    model.save(model_save_path + "/")
 
 

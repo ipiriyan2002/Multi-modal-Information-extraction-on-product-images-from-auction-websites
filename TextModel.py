@@ -21,11 +21,11 @@ print("LIBRARIES INSTALLED!")
 
 
 #Importing preprocess library defined by Author: Ishaipiriyan Karunakularatnam
-import preprocess_dataset as pre
+from preprocess_cord import getMaxLabels, getImgSize
 
 
-MAX_LABELS = pre.getMaxLabels()
-IMG_SIZE = pre.getImgSize()
+MAX_LABELS = getMaxLabels()
+IMG_WIDTH, IMG_HEIGHT = getImgSize()
 
 
 #CORE CONSTANTS
@@ -33,8 +33,16 @@ IMG_INDEX = 1 #Min is 0, Max is 799
 BATCH = 16
 EPOCHS = 50
 L_RATE = 0.001
-pos_alpha = 1.2
+pos_alpha = 1.5
 neg_alpha = 0.2
+conf_loss_weight = 0.8
+bbox_loss_weight = 1.2
+
+def getBatch():
+    return BATCH
+
+def getEpochs():
+    return EPOCHS
 
 
 def combined_loss(y_true, y_pred):
@@ -51,6 +59,7 @@ def combined_loss(y_true, y_pred):
     
     #Calculating the confidence loss seperately for each confidence after applying mask
     #Then adding them together
+    true_conf = backend.cast(true_conf, 'float32')
     bce = BinaryCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
     
     conf_loss_pos = bce(true_conf * pos_mask, pred_conf * pos_mask)
@@ -59,7 +68,7 @@ def combined_loss(y_true, y_pred):
     
     conf_loss = conf_loss_pos + conf_loss_neg
     
-    conf_loss = backend.mean(conf_loss)
+    conf_loss = backend.mean(conf_loss) * conf_loss_weight
     
     #Calculating the bounding box loss for all bounding boxes and then applying mask
     #Same reason as above but for bounding boxes
@@ -67,11 +76,11 @@ def combined_loss(y_true, y_pred):
     true_box = backend.cast(true_box, 'float32')
     bbox_loss = backend.square(true_box - pred_box)
     bbox_loss = backend.sum(bbox_loss, axis=-1)
-    bbox_loss = backend.mean(bbox_loss * pos_mask + bbox_loss * neg_mask)
+    bbox_loss = backend.mean(bbox_loss * pos_mask + bbox_loss * neg_mask) * bbox_loss_weight
     
     return conf_loss, bbox_loss
 
-
+"""
 def averageGradients(conf_gradients, bbox_gradients):
     gradients = []
     for index, conf_grad in enumerate(conf_gradients[:28]):
@@ -89,7 +98,7 @@ def averageGradients(conf_gradients, bbox_gradients):
     
     
     return gradients
-
+"""
 
 class TextDetectorModel(keras.Model):
     def __init__(self, *args, **kargs):
@@ -143,7 +152,7 @@ class TextDetectorModel(keras.Model):
 
 def getFeatureExtracter():
     # Defining the input layer
-    input_layer = Input(shape=(IMG_SIZE, IMG_SIZE, 3))
+    input_layer = Input(shape=(IMG_WIDTH, IMG_HEIGHT, 3))
 
     # Using vgg16 as the feature extractor
     featureExtractor = VGG16(weights="imagenet", include_top=False, input_tensor=input_layer)
@@ -160,15 +169,19 @@ def getModel():
     input_layer, fe_layer = getFeatureExtracter()
     
     x = fe_layer.output
+    x = Conv2D(256, 3, activation='relu')
     x = Flatten()(x)
-    x = Dense(1024, activation="relu")(x)
-    x = Dropout(0.5)(x)
     
-    confScores = Dense(1 * num_labels, activation="sigmoid", name="Confidence_Scores")(x)
+    #Confidence Score Pipeline
+    conf_x = Dense(256, activation="relu")(x)
+    conf_x = Dropout(0.5)(conf_x)
+    confScores = Dense(1 * num_labels, activation="sigmoid", name="Confidence_Scores")(conf_x)
+    
+    #Bounding Box Pipeline
     Bbox_coords = Dense(4 * num_labels, activation="sigmoid", name="BBox_regression")(x)
     Bbox_coords_RS = Reshape((num_labels, 4), name="Bbox")(Bbox_coords)
     
     model = TextDetectorModel(inputs=input_layer, outputs=[confScores, Bbox_coords_RS])
     
-    model.compile(optimizer="adam")
+    model.compile(optimizer=Adam(L_RATE))
     return model

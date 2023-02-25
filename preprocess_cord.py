@@ -1,12 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[79]:
-
-
-get_ipython().run_line_magic('matplotlib', 'inline')
-#inline magic command to make sure all pictures are in line with each cell
-
 #Installing libraries
 print("INSTALLING LIBRARIES....")
 import numpy as np
@@ -19,14 +13,14 @@ from PIL import Image, ImageDraw, ImageFont
 import matplotlib.patches as patches
 import random
 import io
+from datasets import load_dataset
 print("LIBRARIES INSTALLED!")
 
 
 # In[63]:
 
 # Constant Values to use in function
-dataset_path = "./cord-v2/data/"
-IMG_SIZE = 512
+IMG_WIDTH, IMG_HEIGHT = 256, 512
 MAX_LABELS = 22
 
 
@@ -34,7 +28,7 @@ def getMaxLabels():
     return MAX_LABELS
 
 def getImgSize():
-    return IMG_SIZE
+    return IMG_WIDTH, IMG_HEIGHT
 
 # In[133]:
 """
@@ -47,21 +41,21 @@ images : numpy array format for each image in the training dataset
 labels : dict form of the labels for each image
 """
 def getTrainDataset(src_path):
-    train_files = ["train-00000-of-00004-b4aaeceff1d90ecb.parquet", "train-00001-of-00004-7dbbe248962764c5.parquet",
-                   "train-00002-of-00004-688fe1305a55e5cc.parquet", "train-00003-of-00004-2d0cd200555ed7fd.parquet"]
+    #train_files = ["train-00000-of-00004-b4aaeceff1d90ecb.parquet", "train-00001-of-00004-7dbbe248962764c5.parquet",
+    #               "train-00002-of-00004-688fe1305a55e5cc.parquet", "train-00003-of-00004-2d0cd200555ed7fd.parquet"]
     
     
-    train1 = pd.read_parquet(src_path + train_files[0])
-    train2 = pd.read_parquet(src_path + train_files[1])
-    train3 = pd.read_parquet(src_path + train_files[2])
-    train4 = pd.read_parquet(src_path + train_files[3])
+    #train1 = pd.read_parquet(src_path + train_files[0])
+    #train2 = pd.read_parquet(src_path + train_files[1])
+    #train3 = pd.read_parquet(src_path + train_files[2])
+    #train4 = pd.read_parquet(src_path + train_files[3])
 
-    train_dataset = pd.concat([train1, train2, train3, train4], ignore_index=True)
-    
-    byte_dicts = train_dataset["image"]
-    labels_pd = train_dataset["ground_truth"]
-    images = [Image.open(io.BytesIO(img["bytes"])) for img in byte_dicts]
-    labels = [label for label in labels_pd]
+    #train_dataset = pd.concat([train1, train2, train3, train4], ignore_index=True)
+    train_dataset = load_dataset("naver-clova-ix/cord-v2", split="train")
+    images = train_dataset["image"]
+    labels = train_dataset["ground_truth"]
+    #images = [Image.open(io.BytesIO(img["bytes"])) for img in byte_dicts]
+    #labels = [label for label in labels_pd]
     
     return images, labels
 
@@ -79,14 +73,15 @@ images : numpy array format for each image in the validation dataset
 labels : dict form of the labels for each image
 """
 def getValDataset(src_path):
-    val_file = "validation-00000-of-00001-cc3c5779fe22e8ca.parquet"
+    #val_file = "validation-00000-of-00001-cc3c5779fe22e8ca.parquet"
     
-    val_dataset = pd.read_parquet(src_path + val_file)
+    #val_dataset = pd.read_parquet(src_path + val_file)
+    val_dataset = load_dataset("naver-clova-ix/cord-v2", split="validation")
     
-    byte_dicts = val_dataset["image"]
-    labels_pd = val_dataset["ground_truth"]
-    images = [Image.open(io.BytesIO(img["bytes"])) for img in byte_dicts]
-    labels = [label for label in labels_pd]
+    images = val_dataset["image"]
+    labels = val_dataset["ground_truth"]
+    #images = [Image.open(io.BytesIO(img["bytes"])) for img in byte_dicts]
+    #labels = [label for label in labels_pd]
     
     return images, labels
 
@@ -104,23 +99,16 @@ images : numpy array format for each image in the Test dataset
 labels : dict form of the labels for each image
 """
 def getTestDataset(src_path):
-    test_file = "test-00000-of-00001-9c204eb3f4e11791.parquet"
+    #test_file = "test-00000-of-00001-9c204eb3f4e11791.parquet"
     
-    test_dataset = pd.read_parquet(src_path + test_file)
-    
-    byte_dicts = test_dataset["image"]
-    labels_pd = test_dataset["ground_truth"]
-    images = [Image.open(io.BytesIO(img["bytes"])) for img in byte_dicts]
-    labels = [label for label in labels_pd]
+    #test_dataset = pd.read_parquet(src_path + test_file)
+    test_dataset = load_dataset("naver-clova-ix/cord-v2", split="test")
+    images = test_dataset["image"]
+    labels = test_dataset["ground_truth"]
+    #images = [Image.open(io.BytesIO(img["bytes"])) for img in byte_dicts]
+    #labels = [label for label in labels_pd]
     
     return images, labels
-
-
-# In[134]:
-
-
-train_images, train_labels = getTrainDataset(dataset_path)
-
 
 # A label for training data when evaluated using **eval** function gives the following keys:
 # 'gt_parse', 'meta', 'valid_line', 'roi', 'repeating_symbol', 'dontcare'
@@ -233,7 +221,7 @@ def showBBox(img_index):
 Defining pre-process function for images
 """
 def pre_process_images(images):
-    resized_images = [img_to_array(image.copy().resize((IMG_SIZE, IMG_SIZE))) for image in images]
+    resized_images = [img_to_array(image.copy().resize((IMG_WIDTH, IMG_HEIGHT))) for image in images]
     
     np_images = np.array(resized_images, dtype='float32') / 255.0
     return np_images
