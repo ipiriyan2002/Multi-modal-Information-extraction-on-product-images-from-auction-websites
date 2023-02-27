@@ -20,7 +20,7 @@ print("LIBRARIES INSTALLED!")
 # In[63]:
 
 # Constant Values to use in function
-IMG_WIDTH, IMG_HEIGHT = 256, 512
+IMG_WIDTH, IMG_HEIGHT = 256, 256
 MAX_LABELS = 22
 
 
@@ -458,3 +458,40 @@ def pre_process_labels(labels, dense=False):
     
     return new_labels, confScores
 
+def normalizeGroundBox(labels):
+    w, h = labels['meta']['image_size']['width'], labels['meta']['image_size']['height']
+    retBoxes = retreiveCoordinates(labels)
+    
+    norm_boxes = [normalize(box, w, h) for box in retBoxes]
+    
+    return norm_boxes
+
+def unnormalizeGroundBox(boxes, w,h):
+    unnorm_boxes = [unnormalize(box, w, h) for box in boxes]
+    return unnorm_boxes
+
+def createGroundTruthImage(price_box, target_shape):
+    gtImage = np.zeros(target_shape)
+    w, h, _ = target_shape
+    
+    u_box = unnormalizeGroundBox(price_box, w, h)
+    
+    for box in u_box:
+        x1, y1, x3, y3 = box
+        x_range = (x3 - x1) + 1
+        y_range = (y3 - y1) + 1
+        
+        for y in range(y_range):
+            for x in range(x_range):
+                try:
+                    gtImage[y1+y,x1+x, :] = 1
+                except:
+                    continue
+    return gtImage
+
+def pre_preprocess_labels_fcn(ground_truths):
+    norm_boxes = [normaliseGroundBox(eval(gt)) for gt in ground_truths]
+    
+    gtImages = [createGroundTruthImage(box, target_shape=(IMG_WIDTH, IMG_HEIGHT,3)) for box in norm_boxes]
+    
+    return gtImages

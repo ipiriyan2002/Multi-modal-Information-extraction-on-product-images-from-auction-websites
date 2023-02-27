@@ -169,20 +169,16 @@ def getModel():
     input_layer, fe_layer = getFeatureExtracter()
     
     x = fe_layer.output
-    x = Conv2D(256, 3, activation='relu')(x)
-    x = 
-    x = Flatten()(x)
-    conf_x = Dense(256, activation="relu")(x)
-    conf_x = Dropout(0.5)(conf_x)
-    
+    x = Conv2D(512, (3,3), activation="relu", padding="same")(x)
+    #conf_scores = Conv2D(
     #Confidence Score Pipeline
-    confScores = Dense(1 * num_labels, activation="sigmoid", name="Confidence_Scores")(conf_x)
+    #confScores = Dense(1 * num_labels, activation="sigmoid", name="Confidence_Scores")(conf_x)
     
     #Bounding Box Pipeline
-    Bbox_coords = Dense(4 * num_labels, activation="sigmoid", name="BBox_regression")(x)
-    Bbox_coords_RS = Reshape((num_labels, 4), name="Bbox")(Bbox_coords)
+    Bbox_coords = Conv2D(4 * num_labels,(1,1), name="BBox_regression")(x)
+    Bbox_coords_RS = Reshape((-1, num_labels *4), name="Bbox")(Bbox_coords)
     
-    model = TextDetectorModel(inputs=input_layer, outputs=[confScores, Bbox_coords_RS])
+    model = Model(inputs=input_layer, outputs=Bbox_coords_RS)
     
-    model.compile(optimizer=Adam(L_RATE))
+    model.compile(optimizer=Adam(L_RATE), loss='mse',metrics=['accuracy'])
     return model
