@@ -118,7 +118,7 @@ def generateNegBoxes(width, height, pos_boxes, count, iou_thresh=0.3):
 
 
 # Preprocess the CORD dataset to return a pair of bounding boxes numpy array and confidence scores numpy array
-def preprocess_cord_prices(labels, max_labels):
+def preprocess_cord_prices(labels, max_labels, input_width, input_height):
     prices_bboxes = []
     conf_scores = []
     
@@ -156,7 +156,8 @@ def preprocess_cord_prices(labels, max_labels):
         boxes.extend(neg_boxes)
         scores.extend(neg_scores)
         boxes_norm = [utils.normalize(box, width, height) for box in boxes]
-        prices_bboxes.append(boxes_norm)
+        boxes_unnorm = [utils.unnormalize(normBox, input_width, input_height) for normBox in boxes_norm]
+        prices_bboxes.append(boxes_unnorm)
         conf_scores.append(scores)
     
     prices_bboxes = np.array(prices_bboxes)

@@ -16,8 +16,9 @@ def getTransformedDataset(images, bboxes, cscores, img_width, img_height, max_la
                 remaining = max_labels - len(tBoxes)
                 remainingBoxes = pre.generateNegBoxes(img_width, img_height, tBoxes, remaining)
                 remainingScores = [0] * remaining
-                remainingBoxes_norm = [utils.normalize(box, img_width, img_height) for box in remainingBoxes]
-                tBoxes.extend(remainingBoxes_norm)
+                #remainingBoxes_norm = [utils.normalize(box, img_width, img_height) for box in remainingBoxes]
+                
+                tBoxes.extend(remainingBoxes)
                 tScores.extend(remainingScores)
             
             newImages.append(tImage)
@@ -44,7 +45,7 @@ def transformImage(image, boxes, confs, finalWidth, finalHeight, min_vis=0.45):
         alb.VerticalFlip(p=0.5),
         alb.RandomRotate90(p=0.3),
         alb.Resize(width=finalWidth, height=finalHeight, p=1)], 
-        bbox_params=alb.BboxParams(format='albumentations', min_visibility=0.45, label_fields=['conf_scores']))
+        bbox_params=alb.BboxParams(format='pascal_voc', min_visibility=0.45, label_fields=['conf_scores']))
     
     tImage = transform(image=image, bboxes=boxes, conf_scores=confs)
     

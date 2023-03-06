@@ -2,6 +2,7 @@ import torch
 import utils
 import preprocess as pre
 import data_augmentation as aug
+import torchvision.transforms as transforms
 
 class TextDetectorDataset(torch.utils.data.Dataset):
     def __init__(self, images, bboxes, conf_scores):
@@ -18,15 +19,16 @@ class TextDetectorDataset(torch.utils.data.Dataset):
         conf_score = self.conf_scores[idx]
         
         # Convert the image and labels to PyTorch tensors
-        img = torch.tensor(img)
+        transform = transforms.Compose([
+            transforms.ToTensor()
+        ])
+        img = transform(img)
         bbox = torch.as_tensor(bbox, dtype=torch.float32)
         conf_score = torch.as_tensor(conf_score, dtype=torch.int64)
-        area = (bbox[:, 3] - bbox[:, 1]) * (bbox[:, 2] - bbox[:, 0])
         
         ground_truth = {}
         ground_truth["bboxes"] = bbox
         ground_truth["confidence scores"] = conf_score
-        ground_truth["area"] = area
         
         return img, ground_truth
 
@@ -37,7 +39,7 @@ def getCordTorchDatasetLoader(config_file, split):
     imgs, gts = utils.load_cord(split=split)
     #Preprocess the images and ground truths
     pImgs= pre.preprocess_images(imgs, config['IMG_WIDTH'], config['IMG_HEIGHT'])
-    pBoxes, pConfs = pre.preprocess_cord_prices(gts, config['MAX_LABELS'])
+    pBoxes, pConfs = pre.preprocess_cord_prices(gts, config['MAX_LABELS'], config['IMG_WIDTH'], config['IMG_HEIGHT'])
     #Apply Transformations on the images and bboxes
     tImgs, tBoxes, tConfs = aug.getTransformedDataset(pImgs, pBoxes, pConfs, 
                                                       config['IMG_WIDTH'], config['IMG_HEIGHT'], config['MAX_LABELS'])
