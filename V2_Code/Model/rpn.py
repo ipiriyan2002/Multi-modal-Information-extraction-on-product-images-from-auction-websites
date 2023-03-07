@@ -24,13 +24,14 @@ def calc_bbox_reg_loss(gt_offsets, reg_offsets_pos, batch_size):
     return loss
 
 class RegionProposalNetwork(nn.Module):
-    def __init__(self, backbone, img_height, img_width, subsample_ratio, rpn_in_channels, anchor_scales=[1,2,3], anchor_ratios = [0.5,1,1.5]):
+    def __init__(self, backbone, img_height, img_width, subsample_ratio, rpn_in_channels, anchor_scales=[1,2,3], anchor_ratios = [0.5,1,1.5], device=None):
         super(RegionProposalNetwork, self).__init__()
+        #self.cuda_device = "cuda" if device == None else device
+        self.device = device#torch.device(self.cuda_device if torch.cuda.is_available() else "cpu")
         
         # Feature extractor (We are using self-defined class that sets up VGG16 model as backbone)
         self.backbone = backbone
-        self.anchorGenerator = AnchorGenerator()
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.anchorGenerator = AnchorGenerator(device=self.device)
         self.anchorGenerator = self.anchorGenerator.to(self.device)
         
         # Image input size

@@ -156,8 +156,8 @@ def preprocess_cord_prices(labels, max_labels, input_width, input_height):
         boxes.extend(neg_boxes)
         scores.extend(neg_scores)
         boxes_norm = [utils.normalize(box, width, height) for box in boxes]
-        boxes_unnorm = [utils.unnormalize(normBox, input_width, input_height) for normBox in boxes_norm]
-        prices_bboxes.append(boxes_unnorm)
+        #boxes_unnorm = [utils.unnormalize(normBox, input_width, input_height) for normBox in boxes_norm]
+        prices_bboxes.append(boxes_norm)
         conf_scores.append(scores)
     
     prices_bboxes = np.array(prices_bboxes)

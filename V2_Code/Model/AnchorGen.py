@@ -4,9 +4,9 @@ import numpy as np
 from torchvision import ops
 
 class AnchorGenerator(nn.Module):
-    def __init__(self, anchor_scales=[2,4,6], anchor_ratios=[0.5,1,1.5]):
+    def __init__(self, anchor_scales=[2,4,6], anchor_ratios=[0.5,1,1.5], device=None):
         super(AnchorGenerator, self).__init__()
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
         
         self.anchor_scales = anchor_scales
         
@@ -180,6 +180,8 @@ class AnchorGenerator(nn.Module):
         #print(anchorBoxes.shape)
         
         gt_bboxes_clone = gt_bboxes.clone()
+        gt_bboxes_clone[...,[0,2]] *= fm_w
+        gt_bboxes_clone[...,[1,3]] *= fm_h
         gt_cs_clone = gt_conf_scores.clone()
         
         #positive_anc_ind, negative_anc_ind, GT_conf_scores, GT_offsets, GT_class_pos, 

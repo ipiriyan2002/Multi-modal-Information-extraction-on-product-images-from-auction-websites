@@ -3,6 +3,7 @@ import utils
 import preprocess as pre
 import data_augmentation as aug
 import torchvision.transforms as transforms
+from torch.utils.data.distributed import DistributedSampler
 
 class TextDetectorDataset(torch.utils.data.Dataset):
     def __init__(self, images, bboxes, conf_scores):
@@ -32,7 +33,7 @@ class TextDetectorDataset(torch.utils.data.Dataset):
         
         return img, ground_truth
 
-def getCordTorchDatasetLoader(config_file, split):
+def getCordTorchDatasetLoader(config_file, split, include_sampler=False):
     #Load the config file
     config = utils.load_config_file(config_file)
     #Load the images and ground truths for cord dataset
@@ -40,13 +41,20 @@ def getCordTorchDatasetLoader(config_file, split):
     #Preprocess the images and ground truths
     pImgs= pre.preprocess_images(imgs, config['IMG_WIDTH'], config['IMG_HEIGHT'])
     pBoxes, pConfs = pre.preprocess_cord_prices(gts, config['MAX_LABELS'], config['IMG_WIDTH'], config['IMG_HEIGHT'])
-    #Apply Transformations on the images and bboxes
-    tImgs, tBoxes, tConfs = aug.getTransformedDataset(pImgs, pBoxes, pConfs, 
-                                                      config['IMG_WIDTH'], config['IMG_HEIGHT'], config['MAX_LABELS'])
+    if (split != 'test'):
+        #Apply Transformations on the images and bboxes
+        tImgs, tBoxes, tConfs = aug.getTransformedDataset(pImgs, pBoxes, pConfs, 
+                                                          config['IMG_WIDTH'], config['IMG_HEIGHT'], config['MAX_LABELS'])
     
-    #Create a custom dataset from the numpy arrays
-    dataset = TextDetectorDataset(tImgs, tBoxes, tConfs)
-    dataset_loader = torch.utils.data.DataLoader(dataset, batch_size=config['BATCH'], shuffle=True)
+        #Create a custom dataset from the numpy arrays
+        dataset = TextDetectorDataset(tImgs, tBoxes, tConfs)
+    else:
+        dataset = TextDetectorDataset(pImgs, pBoxes, pConfs)
+    
+    if include_sampler:
+        dataset_loader = torch.utils.data.DataLoader(dataset, batch_size=config['BATCH'], shuffle=False, sampler=DistributedSampler(dataset))
+    else:
+        dataset_loader = torch.utils.data.DataLoader(dataset, batch_size=config['BATCH'], shuffle=True)
     
     return dataset_loader
 

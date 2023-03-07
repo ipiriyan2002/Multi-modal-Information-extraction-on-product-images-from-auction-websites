@@ -3,9 +3,10 @@ import torch.nn as nn
 import torchvision
 
 class BackboneNetwork(nn.Module):
-    def __init__(self):
+    def __init__(self, device=None):
         super(BackboneNetwork, self).__init__()
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        #self.cuda_device = "cuda" if device == None else device
+        self.device = device#torch.device(self.cuda_device if torch.cuda.is_available() else "cpu")
         vgg16_model = torchvision.models.vgg16(pretrained=True)
         vgg16_model = vgg16_model.to(self.device)
         vgg16_features = list(vgg16_model.features)
