@@ -1,0 +1,120 @@
+Found cached dataset parquet (/home/ik3g20/.cache/huggingface/datasets/naver-clova-ix___parquet/naver-clova-ix--cord-v2-c97f979311033a44/0.0.0/2a3b91fbd88a2c90d1dbbb32b460cf621d31bd5b05b934492fdef7d8d6f236ec)
+/data/ik3g20/yann_ip/lib/python3.8/site-packages/numpy/core/fromnumeric.py:3432: RuntimeWarning: Mean of empty slice.
+  return _methods._mean(a, axis=axis, dtype=dtype,
+/data/ik3g20/yann_ip/lib/python3.8/site-packages/numpy/core/_methods.py:190: RuntimeWarning: invalid value encountered in double_scalars
+  ret = ret.dtype.type(ret / rcount)
+===> Found Device:  cuda
+/data/ik3g20/yann_ip/lib/python3.8/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/data/ik3g20/yann_ip/lib/python3.8/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+===> Model Defined
+Starting Training
+/data/ik3g20/yann_ip/lib/python3.8/site-packages/torch/nn/parallel/_functions.py:68: UserWarning: Was asked to gather along dimension 0, but all input tensors were scalars; will instead unsqueeze and return a vector.
+  warnings.warn('Was asked to gather along dimension 0, but all '
+Epoch 1 ->  Mean Loss :: 35137.223178297594
+Epoch 2 ->  Mean Loss :: 24198.378323185832
+Epoch 3 ->  Mean Loss :: 20386.585063870036
+Epoch 4 ->  Mean Loss :: 18526.5026225352
+Epoch 5 ->  Mean Loss :: 17308.722968479346
+Epoch 6 ->  Mean Loss :: 16477.431837244916
+Epoch 7 ->  Mean Loss :: 16118.521512686437
+Epoch 8 ->  Mean Loss :: 15703.57354340012
+Epoch 9 ->  Mean Loss :: 15320.572967264212
+Epoch 10 ->  Mean Loss :: 15010.581204976455
+Epoch 11 ->  Mean Loss :: 14723.897895954464
+Epoch 12 ->  Mean Loss :: 14479.270053530527
+Epoch 13 ->  Mean Loss :: 14323.115248708538
+Epoch 14 ->  Mean Loss :: 14171.44931002792
+Epoch 15 ->  Mean Loss :: 14003.166602083189
+Epoch 16 ->  Mean Loss :: 13845.678425875734
+Epoch 17 ->  Mean Loss :: 13705.835775050871
+Epoch 18 ->  Mean Loss :: 13575.408508799788
+Epoch 19 ->  Mean Loss :: 13448.543079428806
+Epoch 20 ->  Mean Loss :: 13343.016462926229
+Epoch 21 ->  Mean Loss :: 13247.591551314426
+Epoch 22 ->  Mean Loss :: 13154.716750981579
+Epoch 23 ->  Mean Loss :: 13066.504128905834
+Epoch 24 ->  Mean Loss :: 12992.616101804808
+Epoch 25 ->  Mean Loss :: 12946.5329006956
+Epoch 26 ->  Mean Loss :: 12901.133845897326
+Epoch 27 ->  Mean Loss :: 12855.386849321334
+Epoch 28 ->  Mean Loss :: 12804.674158680182
+Epoch 29 ->  Mean Loss :: 12749.16056692188
+Epoch 30 ->  Mean Loss :: 12707.956767345418
+Epoch 31 ->  Mean Loss :: 12664.905774043435
+Epoch 32 ->  Mean Loss :: 12619.371715510151
+Epoch 33 ->  Mean Loss :: 12576.351389310159
+Epoch 34 ->  Mean Loss :: 12540.036048263228
+Epoch 35 ->  Mean Loss :: 12505.573601323216
+Epoch 36 ->  Mean Loss :: 12466.168473438907
+Epoch 37 ->  Mean Loss :: 12427.780020239014
+Epoch 38 ->  Mean Loss :: 12391.981857489945
+Epoch 39 ->  Mean Loss :: 12359.048076692177
+Epoch 40 ->  Mean Loss :: 12324.371470125227
+Epoch 41 ->  Mean Loss :: 12293.878528927271
+Epoch 42 ->  Mean Loss :: 12266.611703876706
+Epoch 43 ->  Mean Loss :: 12236.515572568087
+Epoch 44 ->  Mean Loss :: 12210.008453828306
+Epoch 45 ->  Mean Loss :: 12184.406736098023
+Epoch 46 ->  Mean Loss :: 12165.493633141257
+Epoch 47 ->  Mean Loss :: 12140.886565575343
+Epoch 48 ->  Mean Loss :: 12120.977297612886
+Epoch 49 ->  Mean Loss :: 12103.11375062624
+Epoch 50 ->  Mean Loss :: 12082.723613079283
+Epoch 51 ->  Mean Loss :: 12069.505856523378
+Epoch 52 ->  Mean Loss :: 12057.74662510378
+Epoch 53 ->  Mean Loss :: 12045.77921401836
+Epoch 54 ->  Mean Loss :: 12036.169083177703
+Epoch 55 ->  Mean Loss :: 12062.289023420723
+Epoch 56 ->  Mean Loss :: 12133.458282821315
+Epoch 57 ->  Mean Loss :: 12423.653103652323
+Epoch 58 ->  Mean Loss :: 12546.427199185755
+Epoch 59 ->  Mean Loss :: 12602.736976299639
+Epoch 60 ->  Mean Loss :: 12601.073583435114
+Epoch 61 ->  Mean Loss :: 12590.862791605263
+Epoch 62 ->  Mean Loss :: 12580.800881385656
+Epoch 63 ->  Mean Loss :: 12566.253047282653
+Epoch 64 ->  Mean Loss :: 12565.729061979817
+Epoch 65 ->  Mean Loss :: 12567.46616231354
+Epoch 66 ->  Mean Loss :: 12554.797886537572
+Epoch 67 ->  Mean Loss :: 12540.435846251808
+Epoch 68 ->  Mean Loss :: 12528.59732269612
+Epoch 69 ->  Mean Loss :: 12512.427173240565
+Epoch 70 ->  Mean Loss :: 12498.387527348848
+Epoch 71 ->  Mean Loss :: 12483.033979654172
+Epoch 72 ->  Mean Loss :: 12465.780154684759
+Epoch 73 ->  Mean Loss :: 12450.011473135153
+Epoch 74 ->  Mean Loss :: 12439.668405564176
+Epoch 75 ->  Mean Loss :: 12427.525881594986
+Epoch 76 ->  Mean Loss :: 12413.047464646317
+Epoch 77 ->  Mean Loss :: 12397.92351700078
+Epoch 78 ->  Mean Loss :: 12384.120818630548
+Epoch 79 ->  Mean Loss :: 12370.732672663276
+Epoch 80 ->  Mean Loss :: 12357.453920625294
+Epoch 81 ->  Mean Loss :: 12343.664228040452
+Epoch 82 ->  Mean Loss :: 12330.53697269648
+Epoch 83 ->  Mean Loss :: 12316.016594606164
+Epoch 84 ->  Mean Loss :: 12323.974318126202
+Epoch 85 ->  Mean Loss :: 12314.78786338123
+Epoch 86 ->  Mean Loss :: 12309.213316039359
+Epoch 87 ->  Mean Loss :: 12300.564963060217
+Epoch 88 ->  Mean Loss :: 12291.604661513558
+Epoch 89 ->  Mean Loss :: 12280.938268592814
+Epoch 90 ->  Mean Loss :: 12271.408574635125
+Epoch 91 ->  Mean Loss :: 12263.339695389359
+Epoch 92 ->  Mean Loss :: 12253.699688652396
+Epoch 93 ->  Mean Loss :: 12246.65534215149
+Epoch 94 ->  Mean Loss :: 12234.751769117025
+Epoch 95 ->  Mean Loss :: 12223.989155469117
+Epoch 96 ->  Mean Loss :: 12214.481732980516
+Epoch 97 ->  Mean Loss :: 12205.280214527027
+Epoch 98 ->  Mean Loss :: 12196.596914684975
+Epoch 99 ->  Mean Loss :: 12185.128326924381
+Epoch 100 ->  Mean Loss :: 12174.817886228771
+===> Model Trained
+==============================
+All losses:
+[35137.223178297594, 13259.533468074073, 12762.998545238439, 12946.255298530694, 12437.604352255916, 12320.976181072758, 13965.059565335572, 12798.9377583959, 12256.568358176944, 12220.655344386632, 11857.064805734566, 11788.3637868672, 12449.257590844665, 12199.792107179874, 11647.20869085696, 11483.355782763925, 11468.353361853062, 11358.144982531381, 11164.965350751141, 11338.010749377252, 11339.093319078369, 11204.345943991788, 11125.826443239435, 11293.191478481205, 11840.536074074611, 11766.157475940467, 11665.96493834553, 11435.431511369043, 11194.779997689431, 11513.04657962804, 11373.37597498398, 11207.815900978345, 11199.70095091038, 11341.6297937145, 11333.850405362826, 11086.988997488086, 11045.795705042861, 11067.449835774354, 11107.564406377034, 10971.983814014118, 11074.16088100905, 11148.671876803586, 10972.47805760604, 11070.202348017749, 11057.93115596553, 11314.40400008681, 11008.96145754326, 11185.241703377336, 11245.663495267316, 11083.606873278448, 11408.618028728113, 11458.025822704269, 11423.473837576501, 11526.832148622942, 13472.765796543816, 16047.767549853941, 28674.56307018877, 19544.550644591396, 15868.704048904854, 12502.933404428239, 11978.215281814248, 11967.024357989696, 11664.287332896365, 12532.717987901186, 12678.640583671873, 11731.359961099535, 11592.541187391544, 11735.41624446498, 11412.857010262955, 11529.651960820287, 11408.285641026967, 11240.758581856417, 11314.66640156354, 11684.62447288278, 11528.97910787489, 11327.166193496147, 11248.503495939858, 11321.313044122819, 11326.45728721594, 11308.432509624718, 11240.48882125311, 11267.229289834724, 11125.345591200277, 12984.465370289365, 11543.125664803572, 11835.376791980132, 11556.806606854023, 11512.058426954392, 11342.295691567337, 11423.265812400643, 11537.140563270495, 11376.459075588751, 11598.575464068088, 11127.719476911825, 11212.30347256564, 11311.276596563293, 11321.934442992173, 11354.316830005951, 11061.206726386305, 11154.084257363365]
+==============================
+===> Model Saved at: ./Saved_Models/model_100_64_LR_0001.pt

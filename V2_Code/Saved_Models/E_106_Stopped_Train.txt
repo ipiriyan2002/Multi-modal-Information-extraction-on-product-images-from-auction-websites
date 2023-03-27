@@ -1,0 +1,120 @@
+Found cached dataset parquet (/home/ik3g20/.cache/huggingface/datasets/naver-clova-ix___parquet/naver-clova-ix--cord-v2-c97f979311033a44/0.0.0/2a3b91fbd88a2c90d1dbbb32b460cf621d31bd5b05b934492fdef7d8d6f236ec)
+/data/ik3g20/yann_ip/lib/python3.8/site-packages/numpy/core/fromnumeric.py:3432: RuntimeWarning: Mean of empty slice.
+  return _methods._mean(a, axis=axis, dtype=dtype,
+/data/ik3g20/yann_ip/lib/python3.8/site-packages/numpy/core/_methods.py:190: RuntimeWarning: invalid value encountered in double_scalars
+  ret = ret.dtype.type(ret / rcount)
+===> Found Device:  cuda
+/data/ik3g20/yann_ip/lib/python3.8/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/data/ik3g20/yann_ip/lib/python3.8/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=VGG16_Weights.IMAGENET1K_V1`. You can also use `weights=VGG16_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+===> Model Defined
+Starting Training
+/data/ik3g20/yann_ip/lib/python3.8/site-packages/torch/nn/parallel/_functions.py:68: UserWarning: Was asked to gather along dimension 0, but all input tensors were scalars; will instead unsqueeze and return a vector.
+  warnings.warn('Was asked to gather along dimension 0, but all '
+Epoch 1 ->  Mean Loss :: 10496.488658402592 | Current Epoch Loss :: 10496.488658402592
+Epoch 2 ->  Mean Loss :: 10436.76736927699 | Current Epoch Loss :: 10377.04608015139
+Epoch 3 ->  Mean Loss :: 10392.810065871256 | Current Epoch Loss :: 10304.895459059784
+Epoch 4 ->  Mean Loss :: 10364.937391226633 | Current Epoch Loss :: 10281.319367292766
+Epoch 5 ->  Mean Loss :: 10342.368781872636 | Current Epoch Loss :: 10252.09434445664
+Epoch 6 ->  Mean Loss :: 10324.180612240061 | Current Epoch Loss :: 10233.239764077189
+Epoch 7 ->  Mean Loss :: 10309.740222343204 | Current Epoch Loss :: 10223.09788296206
+Epoch 8 ->  Mean Loss :: 10294.092249925865 | Current Epoch Loss :: 10184.556443004489
+Epoch 9 ->  Mean Loss :: 10279.167334375485 | Current Epoch Loss :: 10159.768009972438
+Epoch 10 ->  Mean Loss :: 10264.193123786032 | Current Epoch Loss :: 10129.425228480966
+Epoch 11 ->  Mean Loss :: 10248.2619791493 | Current Epoch Loss :: 10088.950532781975
+Epoch 12 ->  Mean Loss :: 10232.78292607243 | Current Epoch Loss :: 10062.51334222686
+Epoch 13 ->  Mean Loss :: 10219.948950672224 | Current Epoch Loss :: 10065.94124586975
+Epoch 14 ->  Mean Loss :: 10206.886652067424 | Current Epoch Loss :: 10037.076770205007
+Epoch 15 ->  Mean Loss :: 10193.91479184617 | Current Epoch Loss :: 10012.308748748588
+Epoch 16 ->  Mean Loss :: 10180.773943448607 | Current Epoch Loss :: 9983.661217485173
+Epoch 17 ->  Mean Loss :: 10167.68185606552 | Current Epoch Loss :: 9958.208457936136
+Epoch 18 ->  Mean Loss :: 10155.270027854815 | Current Epoch Loss :: 9944.268948272833
+Epoch 19 ->  Mean Loss :: 10142.526359938689 | Current Epoch Loss :: 9913.140337448418
+Epoch 20 ->  Mean Loss :: 10130.315336737553 | Current Epoch Loss :: 9898.305895915959
+Epoch 21 ->  Mean Loss :: 10118.650203670668 | Current Epoch Loss :: 9885.347542332978
+Epoch 22 ->  Mean Loss :: 10107.833874436947 | Current Epoch Loss :: 9880.690960528791
+Epoch 23 ->  Mean Loss :: 10097.306268594502 | Current Epoch Loss :: 9865.698940060753
+Epoch 24 ->  Mean Loss :: 10086.885269763472 | Current Epoch Loss :: 9847.202296649763
+Epoch 25 ->  Mean Loss :: 10076.49299354595 | Current Epoch Loss :: 9827.078364325396
+Epoch 26 ->  Mean Loss :: 10066.480403123616 | Current Epoch Loss :: 9816.165642565325
+Epoch 27 ->  Mean Loss :: 10056.020126645679 | Current Epoch Loss :: 9784.052938219282
+Epoch 28 ->  Mean Loss :: 10045.101809473212 | Current Epoch Loss :: 9750.307245816583
+Epoch 29 ->  Mean Loss :: 10034.936121435298 | Current Epoch Loss :: 9750.296856373723
+Epoch 30 ->  Mean Loss :: 10024.145556572965 | Current Epoch Loss :: 9711.219175565318
+Epoch 31 ->  Mean Loss :: 10012.492322421213 | Current Epoch Loss :: 9662.895297868636
+Epoch 32 ->  Mean Loss :: 10000.22847358821 | Current Epoch Loss :: 9620.049159765109
+Epoch 33 ->  Mean Loss :: 9986.529412320146 | Current Epoch Loss :: 9548.159451742133
+Epoch 34 ->  Mean Loss :: 9971.589952416683 | Current Epoch Loss :: 9478.5877756024
+Epoch 35 ->  Mean Loss :: 9954.945531574282 | Current Epoch Loss :: 9389.035222932627
+Epoch 36 ->  Mean Loss :: 9937.634010422074 | Current Epoch Loss :: 9331.730770094784
+Epoch 37 ->  Mean Loss :: 9916.757893999236 | Current Epoch Loss :: 9165.217702777074
+Epoch 38 ->  Mean Loss :: 9893.360194512095 | Current Epoch Loss :: 9027.645313487847
+Epoch 39 ->  Mean Loss :: 9867.84242606519 | Current Epoch Loss :: 8898.167225082801
+Epoch 40 ->  Mean Loss :: 9839.186961538177 | Current Epoch Loss :: 8721.623844984713
+Epoch 41 ->  Mean Loss :: 9807.4186931012 | Current Epoch Loss :: 8536.687955622028
+Epoch 42 ->  Mean Loss :: 9773.636502109368 | Current Epoch Loss :: 8388.566671444327
+Epoch 43 ->  Mean Loss :: 9737.675886854251 | Current Epoch Loss :: 8227.330046139348
+Epoch 44 ->  Mean Loss :: 9699.33955776457 | Current Epoch Loss :: 8050.87740690826
+Epoch 45 ->  Mean Loss :: 9659.454508726325 | Current Epoch Loss :: 7904.5123510435415
+Epoch 46 ->  Mean Loss :: 9618.824923312422 | Current Epoch Loss :: 7790.493579686865
+Epoch 47 ->  Mean Loss :: 9576.557099258676 | Current Epoch Loss :: 7632.237192786342
+Epoch 48 ->  Mean Loss :: 9533.48719112879 | Current Epoch Loss :: 7509.201509024095
+Epoch 49 ->  Mean Loss :: 9489.737200722213 | Current Epoch Loss :: 7389.737661206522
+Epoch 50 ->  Mean Loss :: 9445.23103003617 | Current Epoch Loss :: 7264.428666420047
+Epoch 51 ->  Mean Loss :: 9400.554519832649 | Current Epoch Loss :: 7166.729009656651
+Epoch 52 ->  Mean Loss :: 9355.719890298291 | Current Epoch Loss :: 7069.153784045983
+Epoch 53 ->  Mean Loss :: 9311.098220419497 | Current Epoch Loss :: 6990.77138672221
+Epoch 54 ->  Mean Loss :: 9266.547659492808 | Current Epoch Loss :: 6905.367930378273
+Epoch 55 ->  Mean Loss :: 9222.324584160293 | Current Epoch Loss :: 6834.278516204531
+Epoch 56 ->  Mean Loss :: 9178.944845054348 | Current Epoch Loss :: 6793.059194227377
+Epoch 57 ->  Mean Loss :: 9136.750574835969 | Current Epoch Loss :: 6773.871442606749
+Epoch 58 ->  Mean Loss :: 9094.817163670119 | Current Epoch Loss :: 6704.612727216626
+Epoch 59 ->  Mean Loss :: 9053.548203953127 | Current Epoch Loss :: 6659.94854036764
+Epoch 60 ->  Mean Loss :: 9013.083709319179 | Current Epoch Loss :: 6625.678525916204
+Epoch 61 ->  Mean Loss :: 8973.712486360446 | Current Epoch Loss :: 6611.439108836489
+Epoch 62 ->  Mean Loss :: 8935.590617837375 | Current Epoch Loss :: 6610.156637930084
+Epoch 63 ->  Mean Loss :: 8897.745790087594 | Current Epoch Loss :: 6551.36646960117
+Epoch 64 ->  Mean Loss :: 8860.308998531114 | Current Epoch Loss :: 6501.791130472855
+Epoch 65 ->  Mean Loss :: 8823.80347437471 | Current Epoch Loss :: 6487.449928364793
+Epoch 66 ->  Mean Loss :: 8787.885000059341 | Current Epoch Loss :: 6453.184169560326
+Epoch 67 ->  Mean Loss :: 8752.707730937216 | Current Epoch Loss :: 6431.00796887698
+Epoch 68 ->  Mean Loss :: 8718.424607536059 | Current Epoch Loss :: 6421.455339658529
+Epoch 69 ->  Mean Loss :: 8685.141394325414 | Current Epoch Loss :: 6421.882896001615
+Epoch 70 ->  Mean Loss :: 8653.03998379414 | Current Epoch Loss :: 6438.042657136258
+Epoch 71 ->  Mean Loss :: 8621.561576050926 | Current Epoch Loss :: 6418.073034026012
+Epoch 72 ->  Mean Loss :: 8590.517249972992 | Current Epoch Loss :: 6386.370098439689
+Epoch 73 ->  Mean Loss :: 8560.295413193104 | Current Epoch Loss :: 6384.323165041024
+Epoch 74 ->  Mean Loss :: 8531.622111437058 | Current Epoch Loss :: 6438.471083245878
+Epoch 75 ->  Mean Loss :: 8502.952405380925 | Current Epoch Loss :: 6381.394157226972
+Epoch 76 ->  Mean Loss :: 8474.517596004496 | Current Epoch Loss :: 6341.906892772469
+Epoch 77 ->  Mean Loss :: 8446.547712428122 | Current Epoch Loss :: 6320.836560623566
+Epoch 78 ->  Mean Loss :: 8419.424311748402 | Current Epoch Loss :: 6330.922459409945
+Epoch 79 ->  Mean Loss :: 8393.043319594193 | Current Epoch Loss :: 6335.325931565961
+Epoch 80 ->  Mean Loss :: 8368.66079872008 | Current Epoch Loss :: 6442.441649665102
+Epoch 81 ->  Mean Loss :: 8344.38639426687 | Current Epoch Loss :: 6402.43403801025
+Epoch 82 ->  Mean Loss :: 8319.78227534897 | Current Epoch Loss :: 6326.848642999108
+Epoch 83 ->  Mean Loss :: 8295.379563218678 | Current Epoch Loss :: 6294.357168534647
+Epoch 84 ->  Mean Loss :: 8272.046293542931 | Current Epoch Loss :: 6335.384910455878
+Epoch 85 ->  Mean Loss :: 8248.826988933923 | Current Epoch Loss :: 6298.405401777231
+Epoch 86 ->  Mean Loss :: 8225.772525444612 | Current Epoch Loss :: 6266.1431288532285
+Epoch 87 ->  Mean Loss :: 8203.152167381391 | Current Epoch Loss :: 6257.801373944425
+Epoch 88 ->  Mean Loss :: 8180.882371407096 | Current Epoch Loss :: 6243.4101216434865
+Epoch 89 ->  Mean Loss :: 8159.233309625842 | Current Epoch Loss :: 6254.115872875468
+Epoch 90 ->  Mean Loss :: 8138.153427047475 | Current Epoch Loss :: 6262.04387757286
+Epoch 91 ->  Mean Loss :: 8117.379404121324 | Current Epoch Loss :: 6247.71734076769
+Epoch 92 ->  Mean Loss :: 8096.820989975538 | Current Epoch Loss :: 6226.005302709012
+Epoch 93 ->  Mean Loss :: 8077.538055885837 | Current Epoch Loss :: 6303.508119633316
+Epoch 94 ->  Mean Loss :: 8058.792390031979 | Current Epoch Loss :: 6315.445465623196
+Epoch 95 ->  Mean Loss :: 8040.122930232975 | Current Epoch Loss :: 6285.193709126523
+Epoch 96 ->  Mean Loss :: 8021.540947985773 | Current Epoch Loss :: 6256.252634501608
+Epoch 97 ->  Mean Loss :: 8003.02044920239 | Current Epoch Loss :: 6225.0525659977375
+Epoch 98 ->  Mean Loss :: 7984.637108845166 | Current Epoch Loss :: 6201.45309419446
+Epoch 99 ->  Mean Loss :: 7966.35974533075 | Current Epoch Loss :: 6175.178120917987
+Epoch 100 ->  Mean Loss :: 7948.4158414882995 | Current Epoch Loss :: 6171.969361085621
+Epoch 101 ->  Mean Loss :: 7930.892702805395 | Current Epoch Loss :: 6178.578834514908
+Epoch 102 ->  Mean Loss :: 7913.458624864206 | Current Epoch Loss :: 6152.616752804141
+Epoch 103 ->  Mean Loss :: 7896.119568604279 | Current Epoch Loss :: 6127.535830091807
+Epoch 104 ->  Mean Loss :: 7879.249687209984 | Current Epoch Loss :: 6141.651903597479
+Epoch 105 ->  Mean Loss :: 7862.674178688884 | Current Epoch Loss :: 6138.82129249454
+Epoch 106 ->  Mean Loss :: 7846.608539340944 | Current Epoch Loss :: 6159.716407807155
