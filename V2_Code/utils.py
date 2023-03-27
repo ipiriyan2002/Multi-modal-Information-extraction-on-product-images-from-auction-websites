@@ -4,19 +4,50 @@ import os
 from datasets import load_dataset
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-#import tensorflow as tf
+import shutil
+from torchvision.datasets import VOCDetection
+
 
 # Path to config folder
 CONFIG_FOLDER_PATH = "./Configs"
+DATA_FOLDER_PATH = "./Data"
 
 # Load the config file given the name of the file
 def load_config_file(fname):
-    file_path = os.path.join(CONFIG_FOLDER_PATH, fname)
+    if CONFIG_FOLDER_PATH in fname:
+        file_path = fname
+    else:
+        file_path = os.path.join(CONFIG_FOLDER_PATH, fname)
+        
     with open(file_path) as f:
         read_config = yaml.safe_load(f)
     
     return read_config
 
+def load_voc_2007(target_dir="./Data/", split="train"):
+    assert (split in ["train", "validation", "test"])
+    
+    save_path = target_dir
+    if split == "train":
+        save_path = save_path + "VOC2007_TRAIN/"
+    elif split == "validation":
+        save_path = save_path + "VOC2007_VAL/"
+    elif split == "test":
+        save_path = save_path + "VOC2007_TEST/"
+    
+    if not(os.path.exists(target_dir)):
+        try:
+            os.makedirs(save_path)
+        except:
+            print("TARGET PATH EXISTS")
+    
+    _ = VOCDetection(save_path, year='2007', image_set=split, download=True)
+    
+    remove_paths = ["VOCdevkit/VOC2007/ImageSets/","VOCdevkit/VOC2007/SegmentationObject/","VOCdevkit/VOC2007/SegmentationClass/"]
+    
+    for rp in remove_paths:
+        shutil.rmtree(save_path + rp, ignore_errors=True)
+        
 # Return a tuple containing the images and ground_truth of the cord dataset
 def load_cord(split):
     dataset = load_dataset("naver-clova-ix/cord-v2", split=split)

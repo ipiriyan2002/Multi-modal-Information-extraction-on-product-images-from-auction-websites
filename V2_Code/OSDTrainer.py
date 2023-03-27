@@ -14,11 +14,13 @@ import datetime
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 class OSDTrainer():
-    def __init__(self, rank, config_name=None):
+    def __init__(self, rank, config_name=None, resume=False, resume_path=""):
         assert config_name != None, "YAML Configuration File Name Under Configs Folder Is Needed"
         
         self.config = utils.load_config_file(config_name)
         self.rank = rank
+        self.resume_point = 0
+        self.prev_min_loss = 1e6
         #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
         #Defining training dataset and model
@@ -42,6 +44,14 @@ class OSDTrainer():
         
         #Defining the Model in terms of DistributedDataParallel
         self.model = DDP(self.model, device_ids=[self.rank], find_unused_parameters=True)
+        
+        
+        if resume:
+            self.resume_dict = torch.load(resume_path)
+            self.model.load_state_dict(resume_dict['model_dict'])
+            self.optimizer.load_state_dict(resume_dict['optimizer_dict'])
+            self.resume_point = self.resume_dict['epoch']
+            self.prev_min_loss = self.resume_dict['loss']
         
         try:
             os.makedirs(self.config['SAVE_PATH_CHECKPOINT'])
@@ -96,7 +106,7 @@ class OSDTrainer():
             #Saving best model
             if (loss < prev_loss):
                 print("Saving Best Model", flush=True)
-                torch.save(save_dict, self.config['SAVE_PATH_BEST'] + "best_model.py")
+                torch.save(save_dict, self.config['SAVE_PATH_BEST'] + "best_model.pt")
                 print("Best Model Saved", flush=True)
                 return loss
         
@@ -104,16 +114,16 @@ class OSDTrainer():
             
     
     def trainModel(self):
+        model.train()
         model_train_time_start = time.time()
         model_final_loss = 0
-        for epoch in range(self.config['EPOCHS']):
+        
+        for epoch in range(self.resume_point, self.config['EPOCHS']):
             
             if self.rank == 0:
-                print(f"=====(Epoch {epoch})=====", flush=True)
+                print(f"=====(Epoch {epoch+1})=====", flush=True)
             #Starting epoch timer
             start_time = time.time()
-            #Setting min_loss to a reasonably hight amount
-            prev_min_loss = 1e6
             #Storing epcoh total loss without storing history
             epoch_total_loss = 0.0
             num_batches = 0.0
@@ -139,7 +149,7 @@ class OSDTrainer():
             #Ending epoch timer
             self.printOutput(epoch, epoch_total_loss, time.time() - start_time)
             
-            prev_min_loss = self.checkpointSaver(epoch_total_loss, prev_min_loss, epoch)
+            self.prev_min_loss = self.checkpointSaver(epoch_total_loss, self.prev_min_loss, epoch)
             model_final_loss = epoch_total_loss
                 
         #Finished Training
