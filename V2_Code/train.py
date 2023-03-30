@@ -7,6 +7,7 @@ import io
 import torch.multiprocessing as mp
 from torch.distributed import init_process_group, destroy_process_group
 from OSDTrainer import OSDTrainer
+import argparse
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Download Pascal 2007 Dataset')

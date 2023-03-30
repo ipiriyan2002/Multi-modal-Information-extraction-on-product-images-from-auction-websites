@@ -114,7 +114,7 @@ class OSDTrainer():
             
     
     def trainModel(self):
-        model.train()
+        self.model.train()
         model_train_time_start = time.time()
         model_final_loss = 0
         
