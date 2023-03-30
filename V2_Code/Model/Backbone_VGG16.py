@@ -13,6 +13,11 @@ class BackboneNetwork(nn.Module):
         self.bbNet = nn.Sequential(*vgg16_features[:-1]).to(self.device)
         #Using all the layers except the last Max pooling layer in the network
         # To subsample input image by a factor of 16 (<- subsample_ratio)
+        
+        
+        for layer in range(10):
+            for param in self.bbNet[layer].parameters():
+                param.requires_grad = False
     
     def forward(self, img):
         img = img.to(self.device)

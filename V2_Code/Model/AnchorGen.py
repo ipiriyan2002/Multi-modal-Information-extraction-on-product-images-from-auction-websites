@@ -4,7 +4,8 @@ import numpy as np
 from torchvision import ops
 
 class AnchorGenerator(nn.Module):
-    def __init__(self, anchor_scales=[2,4,6], anchor_ratios=[0.5,1,1.5], stride=1, device=None):
+    #Based on https://github.com/rbgirshick/py-faster-rcnn/blob/master/lib/rpn/generate_anchors.py
+    def __init__(self, anchor_scales=[16,32,64], anchor_ratios=[0.5,1,1.5], stride=1, device=None):
         super(AnchorGenerator, self).__init__()
         
         self.device = device if device != None else torch.device('cpu')
@@ -37,6 +38,26 @@ class AnchorGenerator(nn.Module):
     
         return out
     
+    def getGrid(self, fmSize):
+        fm_w, fm_h = fmSize
+        
+        #Getting the range of values
+        x_range, y_range = np.arange(0, fm_w), np.arange(0, fm_h)
+        
+        #Multiplying by stride to get possible points
+        x_range *= self.stride
+        y_range *= self.stride
+        
+        #Getting the meshgrid to compute the possible coordinates
+        x_range, y_range = np.meshgrid(x_range, y_range)
+        
+        #Unravel the range into a flattened shape whilst keeping the type
+        x_range = x_range.ravel()
+        y_range = y_range.ravel()
+
+        return np.vstack((x_range, y_range, x_range, y_range)).transpose()
+        
+        
     #Given centre coordinates of an anchor point returns the possible bounding boxes for the anchor boxes from initiated scales and ratios
     def applyAnchorsToPoint(self, xc, yc):
         box = [xc,yc] * 2
@@ -79,10 +100,17 @@ class AnchorGenerator(nn.Module):
     
     def forward(self, fmSize, batch_size):
         
-        anchorBoxes = self.getAnchorBoxes(fmSize)
-        anchorBoxes = np.repeat(anchorBoxes, batch_size, axis=0)
-        anchorBoxes = torch.tensor(anchorBoxes, device=self.device)
-        anchorBoxes = anchorBoxes.reshape(batch_size, -1, 4)
+        grid = torch.from_numpy(self.getGrid(fmSize).astype('float32')).view(-1, 1, 4)
         
+        baseAnchors = torch.from_numpy(self.baseAnchors).view(1,-1,4)
         
-        return anchorBoxes
+        anchors = (grid + baseAnchors)
+        anchors = anchors.reshape(1,-1,4)
+        anchors = anchors.expand(batch_size, -1, 4)
+        
+        #anchorBoxes = self.getAnchorBoxes(fmSize)
+        #anchorBoxes = np.repeat(anchorBoxes, batch_size, axis=0)
+        #anchorBoxes = torch.tensor(anchorBoxes, device=self.device)
+        #anchorBoxes = anchorBoxes.reshape(batch_size, -1, 4)
+        
+        return anchors

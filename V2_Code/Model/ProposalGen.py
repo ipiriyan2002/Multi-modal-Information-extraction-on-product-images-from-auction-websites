@@ -6,6 +6,7 @@ import torch.nn as nn
 
 
 # Include a nms thershold to reduce number of proposals to train on
+# Include a nms thershold to reduce number of proposals to train on
 class ProposalGenerator(nn.Module):
     def __init__(self, fmSize, tmSize, 
                  pos_anc_iou_thresh, neg_anc_iou_thresh, 
@@ -27,16 +28,15 @@ class ProposalGenerator(nn.Module):
     def dropCrossBoundaries(self, anchor):
         fm_w, fm_h = self.fmSize
     
-        # Removing anchors box [x1,y1,x3,y3] with any element(x1 | y1 | x3 | y3) with value less than 0
-        above_0 = torch.where((anchor >= 0).all(axis=1))[0]
-        anchor = anchor[above_0]
-        # Removing anchors box [x1,y1,x3,y3] with any element(x1 | y1 | x3 | y3) with value above than feature map width
-        below_fm_w = torch.where((anchor <= fm_w).all(axis=1))[0]
-        anchor = anchor[below_fm_w]
-        # Removing anchors box [x1,y1,x3,y3] with any element(x1 | y1 | x3 | y3) with value above than feature map height
-        below_fm_h = torch.where((anchor <= fm_h).all(axis=1))[0]
-        anchor = anchor[below_fm_h]
-        return anchor
+        # Removing anchors box [x1,y1,x3,y3] with any element(x1 | y1 | x3 | y3) with value greater than 0
+        minbord = torch.logical_and(anchors[:,0] >= 0, anchors[:,1] >= 0)
+        # Removing anchors box [x1,y1,x3,y3] with any element(x1 | y1 | x3 | y3) with value lesser than feature map width
+        maxbord = torch.logical_and(anchors[:,2] <= fm_w, anchors[:,3] <= fm_h)
+        
+        withinBord = torch.logical_and(minbord, maxbord)
+        where_indexes = torch.where(withinBord)[0]
+        
+        return anchor[where_indexes,:], where_indexes
     
     
     def generalizeTo(self, bboxes, option='tm2fm'):
@@ -113,8 +113,7 @@ class ProposalGenerator(nn.Module):
             del classes_to_add
         
         return torch.stack(anc_bboxes), torch.stack(mapped_classes)
-            
-        
+              
     def forward(self, anchors, gt_bboxes, gt_orig_classes):
         
         #Assigning the max number of anchors (including positive and negative) 
@@ -131,7 +130,7 @@ class ProposalGenerator(nn.Module):
         
         for batch_index, anchor_batch in enumerate(anchors):
             
-            anchor_batch = self.dropCrossBoundaries(anchor_batch)
+            anchor_batch, _ = self.dropCrossBoundaries(anchor_batch)
             
             bboxes_batch = bboxes_generalized[batch_index]
             

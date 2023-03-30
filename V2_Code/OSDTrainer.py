@@ -1,5 +1,6 @@
 from Model.one_stage_detector import OneStageDetector
 from Model.model_utils.pascal_loader import *
+from cord_loader import *
 import os
 import numpy as np
 #import pandas as pd
@@ -25,13 +26,15 @@ class OSDTrainer():
         
         #Defining training dataset and model
         
-        self.cls2idx, self.idx2cls = getClassDicts()
+        #self.cls2idx, self.idx2cls = getClassDicts()
         self.img_width, self.img_height, self.img_depth = self.config["IMG_WIDTH"], self.config["IMG_HEIGHT"], self.config["CHANNELS"]
         
-        self.train_dataset = VOCDetDataset(self.config['PASCAL_TRAIN_IMG_PATH'], self.config['PASCAL_TRAIN_ANN_PATH'],
-                                                       cls_dict=self.cls2idx, 
-                                                       target_size=(self.img_width, self.img_height, self.img_depth))
+        #self.train_dataset = VOCDetDataset(self.config['PASCAL_TRAIN_IMG_PATH'], self.config['PASCAL_TRAIN_ANN_PATH'],
+        #                                               cls_dict=self.cls2idx, 
+        #                                               target_size=(self.img_width, self.img_height, self.img_depth))
         
+        self.train_dataset = CordDataset(self.config['CORD_PATH'], self.config['CLASSES'], 
+                                         target_size=(self.img_width, self.img_height, self.img_depth), split=self.config['train'])
         self.train_loader = torch.utils.data.DataLoader(self.train_dataset, batch_size=self.config['BATCH'], shuffle=True)
         
         self.model = OneStageDetector((self.img_depth, self.img_width, self.img_height),
