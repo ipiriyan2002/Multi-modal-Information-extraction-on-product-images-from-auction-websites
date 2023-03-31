@@ -34,7 +34,7 @@ class OSDTrainer():
         #                                               target_size=(self.img_width, self.img_height, self.img_depth))
         
         self.train_dataset = CordDataset(self.config['CORD_PATH'], self.config['CLASSES'], 
-                                         target_size=(self.img_width, self.img_height, self.img_depth), split=self.config['train'])
+                                         target_size=(self.img_width, self.img_height, self.img_depth), split='train')
         self.train_loader = torch.utils.data.DataLoader(self.train_dataset, batch_size=self.config['BATCH'], shuffle=True)
         
         self.model = OneStageDetector((self.img_depth, self.img_width, self.img_height),

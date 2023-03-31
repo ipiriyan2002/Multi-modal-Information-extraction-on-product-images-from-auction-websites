@@ -6,6 +6,7 @@ from torchvision import ops
 from torch.nn.utils.rnn import pad_sequence
 import torch.utils as tu
 import io
+from pillow import Image
 
 class CordDataset(tu.data.Dataset):
     def __init__(self, path, classes, target_size, split):
