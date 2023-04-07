@@ -1,0 +1,34 @@
+Running SLURM prolog script on pink54.cluster.local
+===============================================================================
+Job started on Sat Apr  8 00:31:21 BST 2023
+Job ID          : 2996331
+Job name        : frcnn_train.slurm
+WorkDir         : /mainfs/lyceum/ik3g20/Multi-modal-Information-extraction-on-product-images-from-auction-websites/V2_Code
+Command         : /mainfs/lyceum/ik3g20/Multi-modal-Information-extraction-on-product-images-from-auction-websites/V2_Code/slurm/slurm_runs/frcnn_train.slurm
+Partition       : lyceum
+Num hosts       : 1
+Num cores       : 2
+Num of tasks    : 1
+Hosts allocated : pink54
+Job Output Follows ...
+===============================================================================
+==============================================================================
+Running epilogue script on pink54.
+
+Submit time  : 2023-04-08T00:31:21
+Start time   : 2023-04-08T00:31:21
+End time     : 2023-04-08T00:31:24
+Elapsed time : 00:00:03 (Timelimit=2-12:00:00)
+
+Job ID: 2996331
+Cluster: i5
+User/Group: ik3g20/fp
+State: FAILED (exit code 1)
+Nodes: 1
+Cores per node: 2
+CPU Utilized: 00:00:03
+CPU Efficiency: 50.00% of 00:00:06 core-walltime
+Job Wall-clock time: 00:00:03
+Memory Utilized: 2.57 MB
+Memory Efficiency: 0.00% of 60.00 GB
+

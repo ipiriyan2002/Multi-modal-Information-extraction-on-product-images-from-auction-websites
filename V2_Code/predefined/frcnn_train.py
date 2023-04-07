@@ -1,13 +1,16 @@
+import sys
+sys.path.append("..")
+
 #Import torch packages
 import torch
 import torch.utils as tu
+import torchvision
 from torchvision.models.detection import FasterRCNN
 from torchvision.models.detection.rpn import AnchorGenerator
 import torch.multiprocessing as mp
 from torch.distributed import init_process_group, destroy_process_group
-from engine import train_one_epoch, evaluate
 #Import custom packages
-from Data_Loaders.base_dataset import BaseDataset
+from custom.Loaders.base_dataset import BaseDataset
 from Utils.utils import load_config_file
 #Import other packages
 import numpy as np
@@ -87,7 +90,7 @@ def main(device, config_name):
     
     
     #Model
-    model = getFasterRCNN((config_file['ANCHOR_SCALES'],), (config_file['ANCHOR_RATIOS'],))
+    model = getFasterRCNN((config_file['ANCHOR_SCALES'],), (config_file['ANCHOR_RATIOS'],), config_file['NUM_CLASSES'])
     model.to(device)
     
     #Dataset
