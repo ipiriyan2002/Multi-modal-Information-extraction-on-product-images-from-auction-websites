@@ -1,0 +1,5 @@
+CORD_V2_PATH: ./scratch/ik3g20/data/cordv2/
+VOC2007_TRAIN_IMG_PATH:  /scratch/ik3g20/data/voc2007/VOC2007_TRAIN/VOCdevkit/VOC2007/JPEGImages/
+VOC2007_TRAIN_ANN_PATH: /scratch/ik3g20/data/voc2007/VOC2007_TRAIN/VOCdevkit/VOC2007/Annotations/
+VOC2007_TEST_IMG_PATH: /scratch/ik3g20/data/voc2007/VOC2007_TEST/VOCdevkit/VOC2007/JPEGImages/
+VOC2007_TEST_ANN_PATH: /scratch/ik3g20/data/voc2007/VOC2007_TEST/VOCdevkit/VOC2007/Annotations/
