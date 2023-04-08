@@ -3,6 +3,8 @@ import torch
 from torchvision import ops
 from torch.nn.utils.rnn import pad_sequence
 import torch.utils as tu
+#Import custom packages
+import custom.Loaders.loader_utils as lu
 #Import other packages
 import os, random, io
 import numpy as np
@@ -109,19 +111,6 @@ class CordDataset(tu.data.Dataset):
         
         return class_dict
     
-    def normaliseToTarget(self, box, width, height):
-        """
-        Normalise the bounding box to target size
-        Return:
-            normalised box: [x_min, y_min, x_max, y_max] such that all elements are normalised to target size
-        """
-        return [
-            int(box[0] / (width/self.target_width)),
-            int(box[1] / (height/self.target_height)),
-            int(box[2] / (width/self.target_width)),
-            int(box[3] / (height/self.target_height))
-        ]
-    
     def getSplitPairs(self):
         """
         - Read the split files
@@ -143,6 +132,7 @@ class CordDataset(tu.data.Dataset):
         
         return list(zip(images, labels))
     
+    
     def getTargets(self, labels):
         """
         Read and return boxes and classes for the label of an image
@@ -163,9 +153,11 @@ class CordDataset(tu.data.Dataset):
             for word in words: #run through n words in each line and retreive the coordinates of said word
                 quad = word['quad']
                 box = [quad['x1'], quad['y1'], quad['x3'], quad['y3']]
-                #Append normalised bounding boxes and numerical value of class
-                boxes.append(self.normaliseToTarget(box, og_width, og_height))
-                classes.append(self.cls_dict[line['category']])
+                norm_box = lu.normaliseToTarget(box, (og_height, og_width), (self.target_height, self.target_width))
+                if lu.isBox(norm_box):
+                    #Append normalised bounding boxes and numerical value of class
+                    boxes.append(norm_box)
+                    classes.append(self.cls_dict[line['category']])
 
         return boxes, classes
         
@@ -204,18 +196,8 @@ class CordDataset(tu.data.Dataset):
             gt_classes = pad_sequence(gt_classes, batch_first=True, padding_value=-1)
         
         #Putting all the data into dictionary format
-        gt_targets = []
-        
-        for index, bboxes in enumerate(gt_bboxes):
-            gt_target = {}
-            gt_target['boxes'] = bboxes
-            gt_target['labels'] = gt_classes[index]
-            gt_target['image_id'] = torch.tensor([index])
-            gt_target['area'] = (bboxes[...,2] - bboxes[...,0]) * (bboxes[...,3] - bboxes[...,1])
-            gt_target['iscrowd'] = (gt_classes[index] < 0).type(torch.int64)
-            gt_targets.append(gt_target)
+        gt_targets = lu.packTargets(gt_bboxes, gt_classes)
             
-        
         return gt_imgs, gt_targets
 
 

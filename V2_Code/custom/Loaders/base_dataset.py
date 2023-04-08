@@ -3,8 +3,9 @@ import torch
 import torch.utils as tu
 #Import custom packages
 from Utils.utils import load_config_file
-from custom.Loaders.cordv2.cord_loader import CordDataset
-from custom.Loaders.voc2007.pascal_loader import VOCDetDataset, getClassDicts
+#Import Custom Loaders
+from custom.Loaders.cord_loader import CordDataset
+from custom.Loaders.pascal_loader import VOCDetDataset, getClassDicts
 #Import other packages
 import numpy as np
 import os,random
