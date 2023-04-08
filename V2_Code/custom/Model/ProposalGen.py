@@ -5,12 +5,10 @@ import numpy as np
 import torch.nn as nn
 
 
-# Include a nms thershold to reduce number of proposals to train on
-# Include a nms thershold to reduce number of proposals to train on
 class ProposalGenerator(nn.Module):
     def __init__(self, fmSize, tmSize, 
                  pos_anc_iou_thresh, neg_anc_iou_thresh, 
-                 ratio_pos_neg, device=None):
+                 min_samples, ratio_pos_neg, device=None):
         
         super(ProposalGenerator, self).__init__()
         
@@ -20,24 +18,21 @@ class ProposalGenerator(nn.Module):
         
         self.pos_anc_iou_thresh = pos_anc_iou_thresh
         self.neg_anc_iou_thresh = neg_anc_iou_thresh
-        #Including a minimum thresh to lower the number of false positive in positive data
-        self.min_pos_iou_thresh = 0.5 * self.neg_anc_iou_thresh
-        
+        self.min_samples = min_samples
         self.ratio_pos_neg = ratio_pos_neg
-       
-    def dropCrossBoundaries(self, anchors):
-        fm_w, fm_h = self.fmSize
+        
+    def getInImages(self, anchors, size):
+        w, h = size
     
         # Removing anchors box [x1,y1,x3,y3] with any element(x1 | y1 | x3 | y3) with value greater than 0
         minbord = torch.logical_and(anchors[:,0] >= 0, anchors[:,1] >= 0)
         # Removing anchors box [x1,y1,x3,y3] with any element(x1 | y1 | x3 | y3) with value lesser than feature map width
-        maxbord = torch.logical_and(anchors[:,2] <= fm_w, anchors[:,3] <= fm_h)
+        maxbord = torch.logical_and(anchors[:,2] <= w, anchors[:,3] <= h)
         
         withinBord = torch.logical_and(minbord, maxbord)
         where_indexes = torch.where(withinBord)[0]
         
-        return anchors[where_indexes,:], where_indexes
-    
+        return where_indexes
     
     def generalizeTo(self, bboxes, option='tm2fm'):
         if option == 'tm2fm':
@@ -57,175 +52,98 @@ class ProposalGenerator(nn.Module):
         
         return bboxes_clone
     
-    #calculates the offsets given the anchor boxes and boxes (ground truth or predicted)
-    def getOffsets(self, anchor_boxes, boxes):
-        #Change format from (x1,y1,x3,y3) to (cx, cy, w, h)
-        anchor_boxes = ops.box_convert(anchor_boxes, in_fmt='xyxy', out_fmt='cxcywh')
-        boxes = ops.box_convert(boxes, in_fmt='xyxy', out_fmt='cxcywh')
-        
-        #Calculating offsets for center x using formula : (box_x - anchor_x) / anchor_width
-        tx = (boxes[...,0] - anchor_boxes[...,0]) / anchor_boxes[...,2]
-        #Calculating offsets for center y using formula : (box_y - anchor_y) / anchor_height
-        ty = (boxes[...,1] - anchor_boxes[...,1]) / anchor_boxes[...,3]
-        #Calculating offsets for width using formula : log(box_w / anchor_width)
-        tw = boxes[...,2] / anchor_boxes[...,2]
-        tw = torch.log(tw)
-        #Calculating offsets for height using formula : log(box_h / anchor_height)
-        th = boxes[...,3] / anchor_boxes[...,3]
-        th = torch.log(th)
-        
-        offsets = torch.stack([tx, ty, tw, th], dim=1).to(self.device)
-        
-        #Deleting local variables to save space
-        del tx
-        del ty
-        del tw
-        del th
-        
-        return offsets
     
-    def getMappedBBoxes(self, anchor_boxes, boxes, conf_scores, gt_classes):
+    def computeIouMatrix(self, anchor, bboxes, batch_size=-1):
+        # given anchor of shape (number of anchors, 4)
+        # and bboxes of shape(batch_size, number of bounding boxes, 4)
+        # and batch_size, either -1 for auto getting batch_size or a self defined batch_size
         
-        anc_bboxes = []
-        mapped_classes = []
+        batch_size = batch_size if batch_size > 0 else bboxes.size(dim=0)
         
-        for index, anchor in enumerate(anchor_boxes):
-            anchor = anchor.reshape(-1,4)
-            iou_anc_gt = ops.box_iou(anchor, boxes.reshape(-1,4))
-            
-            iou_pos = iou_anc_gt == conf_scores[index]
-            
-            bboxes_to_add = boxes[torch.where(iou_pos)[0]]
-            classes_to_add = gt_classes[torch.where(iou_pos)[0]]
-            
-            del iou_anc_gt
-            del iou_pos
-            
-            #only add one gt per anchor
-            if bboxes_to_add.numel() != 1: 
-                bboxes_to_add = bboxes_to_add[0]
-                classes_to_add = classes_to_add[0]
-                
-            anc_bboxes.append(bboxes_to_add)
-            mapped_classes.append(classes_to_add)
-            
-            del bboxes_to_add
-            del classes_to_add
+        iou_matrix = torch.zeros((batch_size, anchor.size(dim=0), bboxes.size(dim=1)), device=self.device)
         
-        return torch.stack(anc_bboxes), torch.stack(mapped_classes)
-              
-    def forward(self, anchors, gt_bboxes, gt_orig_classes):
+        for batch in range(batch_size):
+            iou_matrix[batch, :, :] = ops.box_iou(anchor, bboxes[batch])
         
-        #Assigning the max number of anchors (including positive and negative) 
-        #to make sure the number of anchors for each batch is equal
-        num_neg_anchors = int(self.ratio_pos_neg * anchors.shape[1])
-        num_pos_anchors = anchors.shape[1] - num_neg_anchors
+        return iou_matrix
+    
+    def subsample(self, confs):
         
-        bboxes_generalized = self.generalizeTo(gt_bboxes, option='tm2fm')
+        num_pos = torch.sum(confs==1, dim=0)
+        num_neg = torch.sum(confs==0, dim=0)
         
-        all_anchors = []
-        gt_confscores = []
-        gt_classes = []
-        gt_offsets = []
+        min_pos_samples = int(self.min_samples * self.ratio_pos_neg)
+        min_neg_samples = self.min_samples - min_pos_samples
+        if num_pos > min_pos_samples:
+            num_pos_idx = torch.where(confs.view(-1) == 1)[0].float()
+            rand_remove = torch.multinomial(num_pos_idx, num_samples=num_pos - min_pos_samples, replacement=False)
+            confs.view(-1)[rand_remove] = -1
         
-        for batch_index, anchor_batch in enumerate(anchors):
-            
-            anchor_batch, _ = self.dropCrossBoundaries(anchor_batch)
-            
-            bboxes_batch = bboxes_generalized[batch_index]
-            anchor_batch = anchor_batch.type_as(bboxes_batch)
-            iou = ops.box_iou(anchor_batch, bboxes_batch)
-            flattened_iou = iou.flatten(start_dim=0, end_dim=1)
-            
-                
-            # Using following conditions to get the positions of positive and negative anchors
-            # For positive anchors, either get the maximum iou or iou > positive anchor iou threshold
-            # For negative anchors, get the non-positie anchors that are below negative anchor iou threshold
-            
-            pos_anchors_bool_pos = torch.logical_or(torch.logical_and(iou == iou.max(dim=1, keepdim=True)[0], iou > self.min_pos_iou_thresh), 
-                                                     iou >= self.pos_anc_iou_thresh)
-            
-            neg_anchors_bool_pos = torch.logical_and(iou < self.neg_anc_iou_thresh, torch.logical_not(pos_anchors_bool_pos))
-            
-            
-            #Confidence Scores per box
-            pos_conf_scores = flattened_iou[torch.where(pos_anchors_bool_pos.flatten(start_dim=0, end_dim=1))[0]].reshape(-1,1)
-            
-            sorted_pos_conf_scores, sorted_indexes = torch.sort(pos_conf_scores, descending=True, dim=0)
-            sorted_indexes = sorted_indexes.to(self.device)
-            del pos_conf_scores
-            remaining = 0
-            
-            if sorted_pos_conf_scores.shape[0] < num_pos_anchors:
-                remaining = num_pos_anchors - sorted_pos_conf_scores.shape[0]
-            else:
-                sorted_pos_conf_scores = sorted_pos_conf_scores[:num_pos_anchors]
-            
-            neg_conf_scores = flattened_iou[torch.where(neg_anchors_bool_pos.flatten(start_dim=0, end_dim=1))[0]].reshape(-1,1)[:num_neg_anchors + remaining]
-            
-            conf_scores = torch.cat((sorted_pos_conf_scores, neg_conf_scores), dim=0)
-            
-            del neg_conf_scores
-            del sorted_pos_conf_scores
-            #all_confscores.append(conf_scores)
-            
-            del iou
-            del flattened_iou
-               
-            #Anchor Boxes
-            
-            pos_anchor_boxes = anchor_batch[torch.where(pos_anchors_bool_pos)[0]]
-            
-            sorted_pos_anchor_boxes = pos_anchor_boxes[sorted_indexes][:num_pos_anchors].reshape(-1,4)
+        if num_neg > min_neg_samples:
+            num_neg_idx = torch.where(confs.view(-1) == 0)[0].float()
+            rand_remove = torch.multinomial(num_neg_idx, num_samples=num_neg - min_neg_samples, replacement=False)
+            confs.view(-1)[rand_remove] = -1
 
-            neg_anchor_boxes = anchor_batch[torch.where(neg_anchors_bool_pos)[0]][:num_neg_anchors + remaining]
-            
-            anchor_boxes = torch.cat((sorted_pos_anchor_boxes, neg_anchor_boxes), dim=0)
-            
-            del pos_anchors_bool_pos
-            del neg_anchors_bool_pos
-            del sorted_pos_anchor_boxes
-            
-            
-            all_anchors.append(anchor_boxes)
-            
-            #Anchor Classes (with 0 -> not object, 1 -> object)
-            pos_objectness = torch.ones_like(torch.empty(pos_anchor_boxes.size(dim=0),1), device=self.device)
-            sorted_pos_objectness = pos_objectness[sorted_indexes][:num_pos_anchors].reshape(-1,1)
-            
-            del pos_objectness
-            
-            neg_objectness = torch.zeros_like(torch.empty(neg_anchor_boxes.size(dim=0),1), device=self.device)[:num_neg_anchors+remaining]
-
-            del pos_anchor_boxes
-            del neg_anchor_boxes
-            
-            objectness = torch.cat((sorted_pos_objectness, neg_objectness), dim=0)
-            
-            gt_confscores.append(objectness)
-            
-            del neg_objectness
-            del objectness
-            
-            #Mapping anchor boxes to ground_truth boxes
-            
-            mapped_boxes, mapped_classes = self.getMappedBBoxes(anchor_boxes, bboxes_batch, conf_scores, gt_orig_classes[batch_index])
-            mapped_boxes = mapped_boxes.to(self.device)
-            mapped_classes = mapped_classes.reshape(-1,1).to(self.device)
-            
-            gt_classes.append(mapped_classes)
-            del mapped_classes
-            
-            gt_offset = self.getOffsets(anchor_boxes, mapped_boxes)
-            gt_offsets.append(gt_offset)
-            
-            del mapped_boxes
-            del gt_offset
-            
+        return confs
         
-        all_anchors = torch.stack(all_anchors).to(self.device)
-        gt_confscores = torch.stack(gt_confscores).to(self.device)
-        gt_classes = torch.stack(gt_classes).to(self.device)
-        gt_offsets = torch.stack(gt_offsets).to(self.device)
+    
+    def forward(self, anchor, gt_bboxes, gt_orig_classes):
+        anchor = anchor.type_as(gt_bboxes)
+        batch_size = gt_bboxes.size(dim=0)
+        n_anchors = anchor.size(dim=0)
         
-        return all_anchors, gt_confscores, gt_classes, gt_offsets
+        in_indexes = self.getInImages(anchor, self.tmSize)
+        
+        #Computing a iou matrix of shape (batch_size, number of anchors, number of ground truth boxes)
+        iou_matrix = self.computeIouMatrix(anchor[in_indexes, :], gt_bboxes, batch_size)
+        
+        #The maximum iou for each anchor with respect to ground truth box
+        max_ious, max_ious_indexes = torch.max(iou_matrix, 2)
+        #The maximum iou for each ground truth with respect to each anchor inside image
+        gt_max_ious, gt_max_ious_indexes = torch.max(iou_matrix, 1)
+        
+        #Positive positions for the maximum ious for each ground truth and not 0
+        max_iou_pos = torch.logical_and(iou_matrix == gt_max_ious.view(batch_size, 1, -1).expand_as(iou_matrix), iou_matrix > 0)
+        max_iou_pos = torch.sum(max_iou_pos, 2) > 0
+        
+        gt_confs = torch.zeros((batch_size, in_indexes.size(dim=0)), device=self.device)
+        #Setting negative subset of anchors
+        gt_confs[max_ious <= self.neg_anc_iou_thresh] = 0
+        #Setting positive subset of anchors
+        gt_confs[max_iou_pos] = 1
+        gt_confs[max_ious >= self.pos_anc_iou_thresh] = 1
+        
+        #Subsampling to make sure the number of positive samples is <= min samples and vice versa for negative sample
+        for batch_num in range(gt_confs.size(dim=0)):
+            gt_confs[batch_num] = self.subsample(gt_confs[batch_num])
+        
+        #Calculating the ground truth offsets
+        gt_offset_pos = max_ious_indexes.reshape(batch_size,-1,1,1)
+        gt_offset_pos = gt_offset_pos.repeat(1,1,1,4)
+        
+        target_boxes = gt_bboxes.view(batch_size,1,-1,4)
+        target_boxes = target_boxes.expand(batch_size, max_ious_indexes.size(-1), -1,4)
+        #Target boxes to calculate offsets
+        target_boxes_gathered = torch.gather(target_boxes, 2, gt_offset_pos)
+        target_boxes_gathered = ops.box_convert(target_boxes_gathered.view(batch_size,-1,4), in_fmt='xyxy', out_fmt='cxcywh')
+        #Anchor boxes to calculate offsets
+        anchors_expand = anchor[in_indexes, :].reshape(1,-1,4).repeat(batch_size,1,1)
+        anchors_expand = ops.box_convert(anchors_expand, in_fmt='xyxy', out_fmt='cxcywh')
+        
+        tx = (target_boxes_gathered[...,0] - anchors_expand[...,0]) / anchors_expand[...,2]
+        ty = (target_boxes_gathered[...,1] - anchors_expand[...,1]) / anchors_expand[...,3]
+        tw = torch.log(target_boxes_gathered[...,2] / anchors_expand[...,2])
+        th = torch.log(target_boxes_gathered[...,3] / anchors_expand[...,3])
+        #Gather the offsets
+        gt_offsets = torch.stack([tx,ty,tw,th],dim=2)
+        
+        #Redefine ground truth confs and offsets to size of rpn out
+        #-1 to ignore
+        gt_confs_tots = torch.zeros((batch_size, n_anchors)).fill_(-1).type_as(gt_confs)
+        gt_confs_tots[:, in_indexes] = gt_confs
+        
+        gt_offsets_tots = torch.zeros((batch_size, n_anchors, 4)).type_as(gt_offsets)
+        gt_offsets_tots[:, in_indexes, :] = gt_offsets
+        
+        
+        return gt_confs_tots, gt_offsets_tots

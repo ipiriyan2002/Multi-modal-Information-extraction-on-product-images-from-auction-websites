@@ -20,7 +20,10 @@ class BackboneNetwork(nn.Module):
                 param.requires_grad = False
     
     def forward(self, img):
-        img = img.to(self.device)
+        if isinstance(img, list):
+            img = [i.to(self.device) for i in img]
+        else:
+            img = img.to(self.device)
         return self.bbNet(img)
     
     def getModel(self):

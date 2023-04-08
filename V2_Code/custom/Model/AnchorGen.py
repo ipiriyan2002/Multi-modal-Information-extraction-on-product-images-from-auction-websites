@@ -10,107 +10,72 @@ class AnchorGenerator(nn.Module):
         
         self.device = device if device != None else torch.device('cpu')
         
-        self.anchor_scales = anchor_scales
-        
-        self.anchor_ratios = anchor_ratios
+        self.anchor_scales = torch.tensor(anchor_scales)
+        self.anchor_scales = self.anchor_scales.to(self.device)
+        self.anchor_ratios = torch.tensor(anchor_ratios)
+        self.anchor_ratios = self.anchor_ratios.to(self.device)
         
         self.stride = stride
         
-        self.num_sizes = len(self.anchor_scales) * len(self.anchor_ratios)
-        
-        self.scale_ratio_comb = zip(self.anchor_scales, [self.anchor_ratios] * len(self.anchor_scales))
-        self.baseAnchors = np.array([self.generateBaseAnchor(combo) for combo in self.scale_ratio_comb]).reshape(-1, 4)
+        self.num_sizes = self.anchor_scales.size(dim=0) * self.anchor_ratios.size(dim=0)
         
     
     #Generate the anchor combinations given a scale and different ratios
-    def generateBaseAnchor(self, anchorCombo):
-        scale, ratios = anchorCombo
-        out = []
-    
-        for i in ratios:
-            w = scale * i
-            h = scale
+    def generateBaseAnchors(self, fmSize):
+        fm_h, fm_w = fmSize
+        #Calculate center point
+        x_ctr = (fm_w - 1) * 0.5
+        y_ctr = (fm_h - 1) * 0.5
         
-            base = np.array([-w,-h,w,h]) / 2
-            del w
-            del h
-            out.append(base)
-    
+        size = fm_h * fm_w
+        
+        #Calculating widths and heights wrt ratios
+        widths = torch.sqrt(size / self.anchor_ratios)
+        heights = widths * self.anchor_ratios
+        #Calculating widths and heights wrt to scales
+        widths = widths.expand(self.anchor_scales.size(dim=0),-1) * self.anchor_scales.view(-1,1)
+        heights = heights.expand(self.anchor_scales.size(dim=0),-1) * self.anchor_scales.view(-1,1)
+        widths = widths.ravel()
+        heights = heights.ravel()
+        
+        #Calculate the xmin, ymin, xmax, ymax
+        xmin = x_ctr - (0.5 * widths)
+        ymin = y_ctr - (0.5 * heights)
+        xmax = x_ctr + (0.5 * widths)
+        ymax = y_ctr + (0.5 * heights)
+        
+        out = torch.stack([xmin,ymin,xmax,ymax], axis=1).round()
+        out = out.to(self.device)
         return out
     
     def getGrid(self, fmSize):
         fm_w, fm_h = fmSize
         
         #Getting the range of values
-        x_range, y_range = np.arange(0, fm_w), np.arange(0, fm_h)
+        x_range, y_range = torch.arange(0, fm_w), torch.arange(0, fm_h)
         
         #Multiplying by stride to get possible points
         x_range *= self.stride
         y_range *= self.stride
         
         #Getting the meshgrid to compute the possible coordinates
-        x_range, y_range = np.meshgrid(x_range, y_range)
+        x_range, y_range = torch.meshgrid(x_range, y_range, indexing='ij')
         
         #Unravel the range into a flattened shape whilst keeping the type
         x_range = x_range.ravel()
         y_range = y_range.ravel()
 
-        return np.vstack((x_range, y_range, x_range, y_range)).transpose()
-        
-        
-    #Given centre coordinates of an anchor point returns the possible bounding boxes for the anchor boxes from initiated scales and ratios
-    def applyAnchorsToPoint(self, xc, yc):
-        box = [xc,yc] * 2
-        anchorBoxesXY = []
-        
-        for anchor in self.baseAnchors:
-            out = np.add(box,anchor)
-            #out = np.where(np.add(box, anchor) < 0, 0, np.add(box,anchor))
-            anchorBoxesXY.append(out)
-            del out
-        
-        anchorBoxesXY = np.array(anchorBoxesXY)
-        return anchorBoxesXY
+        out = torch.stack([x_range, y_range, x_range, y_range], dim=1)
+        out = out.to(self.device)
+        return out
     
-    #Given the feature map size, generate anchor boxes
-    def getAnchorBoxes(self, fmSize):
-        fm_w, fm_h = fmSize
+    def forward(self, fmSize):
         
-        anchorBoxes = []
+        grid = self.getGrid(fmSize).view(-1, 1, 4)
         
-        for xc in range(fm_w):
-            for yc in range(fm_h):
-                if (xc + self.stride > fm_w) or (yc + self.stride > fm_h):
-                    continue
-                box = self.applyAnchorsToPoint(xc+self.stride,yc+self.stride)
-                #box = box[np.all(box[...,[0,2]] <= fm_w, axis=1)]
-                #box = box[np.all(box[...,[1,3]] <= fm_h, axis=1)]
-                #box[...,[0,2]] = np.where(box[...,[0,2]] > fm_w, fm_w, box[...,[0,2]])
-                #box[...,[1,3]] = np.where(box[...,[1,3]] > fm_h, fm_h, box[...,[1,3]])
-                anchorBoxes.append(box)
-                del box
-        
-        anchorBoxes = np.array(anchorBoxes).reshape(1, -1, 4)
-        #anchorBoxes = anchorBoxes[np.all(anchorBoxes >= 0, axis=2)].reshape(1,-1,4)
-        #anchorBoxes = anchorBoxes[np.all(anchorBoxes[...,[0,2]] <= fm_w, axis=2)].reshape(1,-1,4)
-        #anchorBoxes = anchorBoxes[np.all(anchorBoxes[...,[1,3]] <= fm_h, axis=2)].reshape(1,-1,4)
-        
-        return anchorBoxes
-    
-    
-    def forward(self, fmSize, batch_size):
-        
-        grid = torch.from_numpy(self.getGrid(fmSize).astype('float32')).view(-1, 1, 4)
-        
-        baseAnchors = torch.from_numpy(self.baseAnchors).view(1,-1,4)
+        baseAnchors = self.generateBaseAnchors(fmSize).view(1,-1,4)
         
         anchors = (grid + baseAnchors)
-        anchors = anchors.reshape(1,-1,4)
-        anchors = anchors.expand(batch_size, -1, 4)
-        
-        #anchorBoxes = self.getAnchorBoxes(fmSize)
-        #anchorBoxes = np.repeat(anchorBoxes, batch_size, axis=0)
-        #anchorBoxes = torch.tensor(anchorBoxes, device=self.device)
-        #anchorBoxes = anchorBoxes.reshape(batch_size, -1, 4)
+        anchors = anchors.reshape(-1,4)
         
         return anchors

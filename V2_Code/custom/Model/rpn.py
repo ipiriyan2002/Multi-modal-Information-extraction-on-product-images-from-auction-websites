@@ -10,7 +10,7 @@ class RegionProposalNetwork(nn.Module):
     def __init__(self, fmSize, imgTargetSize, rpn_in_channels,
                  conf_score_weight = 1, bbox_weight = 10,
                  pos_anchor_thresh = 0.7, neg_anchor_thresh = 0.3, anc_ratio=0.5, 
-                 anchor_scales=[1,2,3], anchor_ratios = [0.5,1,1.5], stride=1, device=None):
+                 anchor_scales=[1,2,3], anchor_ratios = [0.5,1,1.5], min_samples=256,stride=1, device=None):
         super(RegionProposalNetwork, self).__init__()
         #self.cuda_device = "cuda" if device == None else device
         self.device = device if device != None else torch.device('cpu')
@@ -31,7 +31,7 @@ class RegionProposalNetwork(nn.Module):
         
         self.proposalGenerator = ProposalGenerator(self.fmSize, self.tmSize, 
                                                    pos_anchor_thresh, neg_anchor_thresh,
-                                                   anc_ratio, self.device)
+                                                   min_samples, anc_ratio, self.device)
         
         #Setting up the rpn network
         self.conv1 = nn.Conv2d(rpn_in_channels, 512, 3, padding=1, device=self.device)
@@ -54,88 +54,89 @@ class RegionProposalNetwork(nn.Module):
         return conf_out, bbox_out
     
     def confScoreLoss(self, batch_size, pred_confs, gt_confs):
+        weights = torch.abs((gt_confs == 1).type(torch.int64)).view(batch_size, -1)
         
-        loss = torch.nn.functional.binary_cross_entropy_with_logits(pred_confs, gt_confs, reduction='sum')
-        loss /= batch_size
+        loss = torch.nn.functional.binary_cross_entropy_with_logits(pred_confs, gt_confs * weights)
         
         return loss
     
     def bboxLoss(self, batch_size, pred_offsets, gt_offsets, gt_conf_scores):
-        loss = 0
         
-        for batch_index, pred_batch in enumerate(pred_offsets):
-            gt_offsets_batch = gt_offsets[batch_index]
-            gt_cs_batch = gt_conf_scores[batch_index]
-            pos_positions = torch.where(gt_cs_batch > 0)
-            loss += float(torch.nn.functional.smooth_l1_loss(pred_batch[pos_positions], gt_offsets_batch[pos_positions], reduction='sum'))
-            
-        loss /= batch_size
+        pos = (gt_conf_scores == 1).type(torch.int64) * 1
+        neg = (gt_conf_scores == 0).type(torch.int64) * 1
+        
+        weights = torch.abs(pos + neg)
+        weights = weights.view(batch_size, -1, 1)
+        pred_offsets = pred_offsets * weights
+        gt_offsets = gt_offsets * weights
+        loss = torch.nn.functional.smooth_l1_loss(pred_offsets, gt_offsets)
         
         return loss
     
     def getProposals(self, anchors, predicted_offsets):
         anchors = ops.box_convert(anchors, in_fmt='xyxy', out_fmt='cxcywh')
         
-        #An empty placeholder to put the proposals
-        proposals = torch.zeros_like(anchors)
-        #Getting the proposals for the cx
-        proposals[...,0] = (predicted_offsets[...,0] * anchors[...,2]) + anchors[...,0]
-        #Getting the proposals for the cy
-        proposals[...,1] = (predicted_offsets[...,1] * anchors[...,3]) + anchors[...,1]
-        #Getting the proposals for the w
-        proposals[...,2] = torch.exp(predicted_offsets[...,2]) * anchors[...,2]
-        #Getting the proposals for the h
-        proposals[...,3] = torch.exp(predicted_offsets[...,3]) * anchors[...,3]
+        x_ctr = anchors[...,0] + (predicted_offsets[...,0] * anchors[...,2])
+        y_ctr = anchors[...,1] + (predicted_offsets[...,1] * anchors[...,3])
+        width = torch.exp(predicted_offsets[...,2]) * anchors[...,2]
+        height = torch.exp(predicted_offsets[...,3]) * anchors[...,3]
         
-        return ops.box_convert(proposals, in_fmt='cxcywh', out_fmt='xyxy')
+        props = torch.stack([x_ctr, y_ctr, width, height], axis=2)
+        
+        return ops.box_convert(props, in_fmt='cxcywh', out_fmt='xyxy')
     
     def forward(self, feature_maps, gt_bboxes, gt_classes):
         batch_size = gt_bboxes.shape[0]
         
-        anchors = self.anchorGenerator(self.fmSize, batch_size)
+        anchor = self.anchorGenerator(self.fmSize)
         
-        all_anchors, gt_conf_scores, gt_classes, gt_offsets = self.proposalGenerator(anchors, gt_bboxes, gt_classes)
-        del anchors
+        gt_conf_scores, gt_offsets = self.proposalGenerator(anchor, gt_bboxes, gt_classes)
         
         conf_out, bbox_out = self.rpnPass(feature_maps) 
         #Predicting proposals and objectness
         
-        conf_out = conf_out.reshape(batch_size, -1, 1)
-        bbox_out = bbox_out.reshape(batch_size, -1, 4)
+        conf_out = conf_out.view(batch_size, -1)
+        bbox_out = bbox_out.view(batch_size, -1, 4)
         
         conf_loss = self.confScoreLoss(batch_size, conf_out, gt_conf_scores)
         bbox_loss = self.bboxLoss(batch_size, bbox_out, gt_offsets, gt_conf_scores)
         
-        del gt_offsets
-        del conf_out
         
         total_loss = (self.conf_score_weight * conf_loss) + (self.bbox_weight * bbox_loss)
         
-        del conf_loss
-        del bbox_loss
         
         #Generating proposals
-        proposals = self.getProposals(all_anchors, bbox_out)
+        proposals = self.getProposals(anchor.view(1,-1,4).repeat(batch_size,1,1), bbox_out)
         proposals = self.proposalGenerator.generalizeTo(proposals, 'fm2tm')
         
-        del all_anchors
-        del bbox_out
         
-        return total_loss, proposals, gt_classes, gt_conf_scores
+        return total_loss, proposals, conf_out
     
-    def inference(self, feature_maps, batch_size):
+    
+    def inference(self, feature_maps, nms_thresh=0.7, conf_thresh=0.5):
         with torch.no_grad():
-            anchors = self.anchorGenerator(self.fmSize, batch_size)
+            batch_size = feature_maps.size(dim=0)
+            anchor = self.anchorGenerator(self.fmSize)
             
             conf_out, bbox_out = self.rpnPass(feature_maps)
             
-            conf_out = conf_out.reshape(batch_size, -1, 1)
+            conf_out = conf_out.reshape(batch_size, -1)
             bbox_out = bbox_out.reshape(batch_size, -1, 4)
             
-            proposals = self.getProposals(anchors, bbox_out)
+            proposals = self.getProposals(anchor.view(1,-1,4).repeat(batch_size,1,1), bbox_out)
             proposals = self.proposalGenerator.generalizeTo(proposals, 'fm2tm')
             
-            del anchors
-            del bbox_out
+            in_confs = [torch.where(conf >= conf_thresh)[0] for conf in conf_out]
             
-        return proposals, conf_out
+            confs = [conf[in_conf] for conf,in_conf in zip(conf_out, in_confs)]
+            props = [prop[in_conf] for prop,in_conf in zip(proposals, in_confs)]
+            
+            nms_pos = [ops.nms(prop,conf,nms_thresh) for prop,conf in zip(props,confs)]
+            
+            final_proposals = [prop[nms] for prop, nms in zip(props,nms_pos)]
+            final_confs = [conf[nms] for conf, nms in zip(confs, nms_pos)]
+            
+            
+        return final_proposals, final_confs
+
+
