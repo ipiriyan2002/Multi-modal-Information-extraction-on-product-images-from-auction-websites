@@ -1,0 +1,41 @@
+Lmod has detected the following error: The following module(s) are unknown:
+"gcc/11.0"
+
+Please check the spelling or version number. Also try "module spider ..."
+It is also possible your cache file is out-of-date; it may help to try:
+  $ module --ignore-cache load "gcc/11.0"
+
+Also make sure that all modulefiles written in TCL start with the string
+#%Module
+
+
+
+Traceback (most recent call last):
+  File "./train.py", line 46, in <module>
+    mp.spawn(runDDPTraining, args=(worldsize, config_name, args), nprocs=worldsize)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/site-packages/torch/multiprocessing/spawn.py", line 239, in spawn
+    return start_processes(fn, args, nprocs, join, daemon, start_method='spawn')
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/site-packages/torch/multiprocessing/spawn.py", line 197, in start_processes
+    while not context.join():
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/site-packages/torch/multiprocessing/spawn.py", line 160, in join
+    raise ProcessRaisedException(msg, error_index, failed_process.pid)
+torch.multiprocessing.spawn.ProcessRaisedException: 
+
+-- Process 0 terminated with the following error:
+Traceback (most recent call last):
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/site-packages/torch/multiprocessing/spawn.py", line 69, in _wrap
+    fn(i, *args)
+  File "/mainfs/lyceum/ik3g20/Multi-modal-Information-extraction-on-product-images-from-auction-websites/V2_Code/train.py", line 38, in runDDPTraining
+    modelTrainer = OSDTrainer(rank, config_name=config_name, resume=resume, resume_path=r_path)
+  File "/mainfs/lyceum/ik3g20/Multi-modal-Information-extraction-on-product-images-from-auction-websites/V2_Code/OSDTrainer.py", line 36, in __init__
+    self.train_dataset = CordDataset(self.config['CORD_PATH'], self.config['CLASSES'],
+  File "/mainfs/lyceum/ik3g20/Multi-modal-Information-extraction-on-product-images-from-auction-websites/V2_Code/cord_loader.py", line 29, in __init__
+    self.gt_imgs, self.gt_bboxes, self.gt_classes = self.getDataset()
+  File "/mainfs/lyceum/ik3g20/Multi-modal-Information-extraction-on-product-images-from-auction-websites/V2_Code/cord_loader.py", line 85, in getDataset
+    list_of_pairs = self.getSplitPairs()
+  File "/mainfs/lyceum/ik3g20/Multi-modal-Information-extraction-on-product-images-from-auction-websites/V2_Code/cord_loader.py", line 62, in getSplitPairs
+    images = [Image.open(io.BytesIO(img["bytes"])) for img in dataset['image']]
+  File "/mainfs/lyceum/ik3g20/Multi-modal-Information-extraction-on-product-images-from-auction-websites/V2_Code/cord_loader.py", line 62, in <listcomp>
+    images = [Image.open(io.BytesIO(img["bytes"])) for img in dataset['image']]
+NameError: name 'Image' is not defined
+

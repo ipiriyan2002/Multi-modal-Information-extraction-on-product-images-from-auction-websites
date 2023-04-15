@@ -1,0 +1,98 @@
+Traceback (most recent call last):
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/urllib/request.py", line 1354, in do_open
+    h.request(req.get_method(), req.selector, req.data, headers,
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/http/client.py", line 1256, in request
+    self._send_request(method, url, body, headers, encode_chunked)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/http/client.py", line 1302, in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/http/client.py", line 1251, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/http/client.py", line 1011, in _send_output
+    self.send(msg)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/http/client.py", line 951, in send
+    self.connect()
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/http/client.py", line 922, in connect
+    self.sock = self._create_connection(
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/socket.py", line 808, in create_connection
+    raise err
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/socket.py", line 796, in create_connection
+    sock.connect(sa)
+OSError: [Errno 101] Network is unreachable
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "./init_train.py", line 23, in <module>
+    load_voc_2007(target_dir=tdir, split=split)
+  File "/mainfs/lyceum/ik3g20/Multi-modal-Information-extraction-on-product-images-from-auction-websites/V2_Code/utils.py", line 44, in load_voc_2007
+    _ = VOCDetection(save_path, year='2007', image_set=split, download=True)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/site-packages/torchvision/datasets/voc.py", line 98, in __init__
+    download_and_extract_archive(self.url, self.root, filename=self.filename, md5=self.md5)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/site-packages/torchvision/datasets/utils.py", line 434, in download_and_extract_archive
+    download_url(url, download_root, filename, md5)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/site-packages/torchvision/datasets/utils.py", line 134, in download_url
+    url = _get_redirect_url(url, max_hops=max_redirect_hops)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/site-packages/torchvision/datasets/utils.py", line 82, in _get_redirect_url
+    with urllib.request.urlopen(urllib.request.Request(url, headers=headers)) as response:
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/urllib/request.py", line 222, in urlopen
+    return opener.open(url, data, timeout)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/urllib/request.py", line 525, in open
+    response = self._open(req, data)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/urllib/request.py", line 542, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/urllib/request.py", line 502, in _call_chain
+    result = func(*args)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/urllib/request.py", line 1383, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/urllib/request.py", line 1357, in do_open
+    raise URLError(err)
+urllib.error.URLError: <urlopen error [Errno 101] Network is unreachable>
+Traceback (most recent call last):
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/urllib/request.py", line 1354, in do_open
+    h.request(req.get_method(), req.selector, req.data, headers,
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/http/client.py", line 1256, in request
+    self._send_request(method, url, body, headers, encode_chunked)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/http/client.py", line 1302, in _send_request
+    self.endheaders(body, encode_chunked=encode_chunked)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/http/client.py", line 1251, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/http/client.py", line 1011, in _send_output
+    self.send(msg)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/http/client.py", line 951, in send
+    self.connect()
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/http/client.py", line 922, in connect
+    self.sock = self._create_connection(
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/socket.py", line 808, in create_connection
+    raise err
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/socket.py", line 796, in create_connection
+    sock.connect(sa)
+OSError: [Errno 101] Network is unreachable
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "./init_train.py", line 23, in <module>
+    load_voc_2007(target_dir=tdir, split=split)
+  File "/mainfs/lyceum/ik3g20/Multi-modal-Information-extraction-on-product-images-from-auction-websites/V2_Code/utils.py", line 44, in load_voc_2007
+    _ = VOCDetection(save_path, year='2007', image_set=split, download=True)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/site-packages/torchvision/datasets/voc.py", line 98, in __init__
+    download_and_extract_archive(self.url, self.root, filename=self.filename, md5=self.md5)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/site-packages/torchvision/datasets/utils.py", line 434, in download_and_extract_archive
+    download_url(url, download_root, filename, md5)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/site-packages/torchvision/datasets/utils.py", line 134, in download_url
+    url = _get_redirect_url(url, max_hops=max_redirect_hops)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/site-packages/torchvision/datasets/utils.py", line 82, in _get_redirect_url
+    with urllib.request.urlopen(urllib.request.Request(url, headers=headers)) as response:
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/urllib/request.py", line 222, in urlopen
+    return opener.open(url, data, timeout)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/urllib/request.py", line 525, in open
+    response = self._open(req, data)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/urllib/request.py", line 542, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/urllib/request.py", line 502, in _call_chain
+    result = func(*args)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/urllib/request.py", line 1383, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+  File "/scratch/ik3g20/anaconda3/envs/ip_iridis/lib/python3.8/urllib/request.py", line 1357, in do_open
+    raise URLError(err)
+urllib.error.URLError: <urlopen error [Errno 101] Network is unreachable>
