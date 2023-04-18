@@ -2,8 +2,9 @@
 BACKBONE: vgg16
 BACKBONE_OUT_CHANNELS: 512
 FEAT_SCALAR: 16
-MIN_SAMPLES: 256
 NUM_CLASSES: -1
+PRETRAINED: True
+PRETRAINED_PATH: data/pretrained/vgg16/vgg16-397923af.pth
 
 #Image setting
 IMG_WIDTH: 256
@@ -14,6 +15,7 @@ CHANNELS: 3
 EPOCHS: 20
 VAL_EPOCH: 4
 SAVE_ENTRY: 10
+LOG_ENTRY: 2
 BATCH: 16
 VAL_BATCH: 8
 
@@ -41,7 +43,20 @@ ANCHOR_RATIO: 0.5
 ANCHOR_SCALES: [8,16,32]
 ANCHOR_RATIOS: [0.5,1,2]
 STRIDE: 16 #Stride for VGG16 model
+RPN_MAX_SAMPLES: 256
 
 #ROI Network
 ROI_HEIGHT: 7
 ROI_WIDTH: 7
+ROI_MAX_SAMPLES: 256
+ROI_RATIO: 0.5
+NORMALIZE_MEAN: [0.0,0.0,0.0,0.0]
+NORMALIZE_STD: [0.1,0.1,0.2,0.2]
+POS_PROP_THRESH: 0.5
+NEG_PROP_THRESH: [0.5,0.1] #Neg prop thresh is a two element list with first element as high thresh and the other as low thresh
+
+#Train
+SEPERATE_TRAIN: False
+NUM_WORKERS: 2
+SAVE_PATH_CHECKPOINT: ./Saved_Models/Temp/
+SAVE_PATH_BEST: ./Saved_Models/Temp/Best_Model/

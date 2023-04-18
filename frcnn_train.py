@@ -10,17 +10,18 @@ from torchvision.models.detection.rpn import AnchorGenerator
 import torch.multiprocessing as mp
 from torch.distributed import init_process_group, destroy_process_group
 #Import custom packages
-from custom.Loaders.base_dataset import BaseDataset
+from lib.Loaders.base_dataset import BaseDataset
 from Utils.utils import load_config_file
 from Utils.eval import evaluate
 from Utils.config_loader import ConfigLoader
+from Utils.logger_utils import TrainingLogger
 #Import other packages
 import numpy as np
 import os, io, time, datetime, argparse
 
 #=====Utility Functions=====
 def parse_args():
-    parser = argparse.ArgumentParser(description='Download Pascal 2007 Dataset')
+    parser = argparse.ArgumentParser(description='Train Faster RCNN pre-implemented in pytorch')
     parser.add_argument("config", help="config file")
     args = parser.parse_args()
     
@@ -35,7 +36,7 @@ def setupDDP(rank, worldsize):
 
 def runDDPTraining(rank, worldsize, config_name):
     setupDDP(rank, worldsize)
-    main(rank, config_name=config_name)
+    main(rank, worldsize, config_name=config_name)
     destroy_process_group()
 
 #=====Model Functions=====
@@ -53,39 +54,43 @@ def getFasterRCNN(aspect_sizes, aspect_ratios, num_classes):
 
 def train_epoch(model, optimizer, loader, device):
     model.train()
-    batch_no = 0
+    epoch_start = time.time()
+    batch_no = 1
+    temp_losses = 0
+    scalar = torch.cuda.amp.GradScaler()
     for images, targets in loader:
         #Data, setting to same device
-        batch_start = time.time()
         optimizer.zero_grad()
         images = [img.to(device) for img in images]
         targets = [{k:v.to(device) for k,v in target.items()} for target in targets]
         
-        with torch.autocast():
-            outputs = model(images, targets)
-            losses = sum([loss for loss in outputs.values()])
+        with torch.cuda.amp.autocast():
+            losses = model(images, targets)
+            losses = sum([loss for loss in losses.values()])
         
-        losses.backward()
-        optimizer.step()
-        batch_duration = time.time() - batch_start
-        if (batch_no + 1) % 2 == 0: 
-            print(f"(Batch:{batch_no}, Duration:{str(datetime.timedelta(seconds = batch_duration))}, Learning rate:{optimzer.param_groups[0]['lr']}) ==> Loss {losses}", flush=True)
+        temp_losses += float(losses)
+        batch_no += 1
+        scalar.scale(losses).backward()
+        scalar.step(optimizer)
+        scalar.update()
+
+    temp_losses = temp_losses / batch_no
+    duration = time.time() - epoch_start
+    return temp_losses, duration
      
-    
+def collate(batch):
+    return list(zip(*batch))
+
 #=====Main Function=====
-def main(device, config_name):
-    config_file = ConfigLoader("cord_e100.yaml")
+def main(device, worldsize, config_name):
+    config_file = ConfigLoader(config_name)
     
-    try:
-        os.makedirs(config_file.get('SAVE_PATH_CHECKPOINT'))
-        os.makedirs(config_file.get('SAVE_PATH_BEST'))
-    except:
-        print("Warning: File Already Exits! Continuing to next step...")
-    
+    #Logger
+    logger = TrainingLogger(config_file)
     
     #Model
     model = getFasterRCNN((config_file.get('ANCHOR_SCALES'),), (config_file.get('ANCHOR_RATIOS'),), config_file.get('NUM_CLASSES'))
-    model.to(device)
+    model = model.to(device)
     
     #Dataset
     load_time = time.time()
@@ -94,59 +99,45 @@ def main(device, config_name):
     val_dataset = BaseDataset(config_file, pad=False, split='validation')
     
     #Data loaders
-    collate = lambda batch: list(zip(*batch))
-    train_loader = tu.data.DataLoader(train_dataset.getDataset(), batch_size=config_file.get('BATCH'), shuffle=True, num_workers=4,collate_fn=collate)
+    train_loader = tu.data.DataLoader(train_dataset.getDataset(), batch_size=config_file.get('BATCH'), shuffle=True, pin_memory=True, num_workers=0*worldsize, collate_fn=collate)
     
-    val_loader = tu.data.DataLoader(val_dataset.getDataset(), batch_size=config_file.get('VAL_BATCH'), shuffle=False, num_workers=4,collate_fn=collate)
+    val_loader = tu.data.DataLoader(val_dataset.getDataset(), batch_size=config_file.get('VAL_BATCH'), shuffle=False, pin_memory=True, num_workers=0*worldsize, collate_fn=collate)
     
     duration = time.time() - load_time
-    print(f"Dataset Loading Time: {str(datetime.timedelta(seconds = duration))}", flush=True)
+    if device == 0:
+        print(f"Dataset Loading Time: {str(datetime.timedelta(seconds = duration))}", flush=True)
     
     #Optimizer
     optimizer = torch.optim.SGD(model.parameters(), lr=config_file.get('L_RATE'), momentum=config_file.get('MOMENTUM'), weight_decay=config_file.get('W_DECAY'))
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=config_file.get('STEP_SIZE'), gamma=config_file.get('GAMMA'))
     
+    total_start = time.time()
+    
     for epoch in range(config_file.get('EPOCHS')):
-        epoch_start_time = time.time()
-        print(f"===============Epoch {epoch+1}===============", flush=True)
         #Train for one epoch
-        train_epoch(model, optimizer, train_loader, device)
+        losses, duration = train_epoch(model, optimizer, train_loader, device)
+            
         #Reduce learning rate
         scheduler.step()
         #Evaluate on validation dataset
+        eval_metrics = {"map":-1}
         
         if (epoch+1) % config_file.get("VAL_EPOCH") == 0:
             eval_start = time.time()
             eval_metrics = evaluate(model,val_loader,device=device)
             eval_duration = time.time() - eval_start
-            print("="*30, flush=True)
-            print(f"Model Evaluated : {str(datetime.timedelta(seconds = eval_duration))}", flush=True)
-            print(eval_metrics, flush=True)
-            print("="*30, flush=True)
+            model.train() #Resetting to training mode
         
-        epoch_duration = time.time() - epoch_start_time
-        
-        
-        
-        
-        #Saving model every 10 epochs
-        if (epoch+1) % 10 == 0:
-            save_dict = {
-                'epoch': epoch+1,
-                'model_dict': model.module.state_dict(),
-                'optimizer_dict': optimizer.state_dict() 
-            }
-            print("Saving Model", flush=True)
-            torch.save(save_dict, self.config['SAVE_PATH_CHECKPOINT'] + f"checkpoint_{epoch+1}.pt")
-            print("Saved Model", flush=True)
-        
-        print(f"Epoch Duration {str(datetime.timedelta(seconds = epoch_duration))}", flush=True)
-        print(f"===============Epoch Finished===============", flush=True)
+        if device == 0:
+            logger.update(losses, epoch+1, duration, model, optimizer, eval_metrics)
+            logger.summarize()
     
-
-
+    total_duration = time.time() - total_start
+    print(f"Model Finished Training: {str(datetime.timedelta(seconds = total_duration))}", flush=True)
+    
 if __name__ == "__main__":
+    #mp.set_start_method("fork")
     args = parse_args()
     config_name = args.config
     worldsize = torch.cuda.device_count()
-    mp.spawn(runDDPTraining, args=(worldsize, config_name, args), nprocs=worldsize)
+    mp.spawn(runDDPTraining, args=(worldsize, config_name), nprocs=worldsize)

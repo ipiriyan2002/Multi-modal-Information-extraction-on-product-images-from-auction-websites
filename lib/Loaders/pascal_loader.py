@@ -104,9 +104,10 @@ class VOCDetDataset(tu.data.Dataset):
                     bboxes.append(norm_box)
                     classes.append(self.cls_dict[obj['class']])
             
+            
             #Append tensor form of boxes and classes
-            gt_bboxes.append(torch.tensor(bboxes, dtype=torch.float32))
-            gt_classes.append(torch.tensor(classes, dtype=torch.int64))
+            gt_bboxes.append(torch.as_tensor(bboxes, dtype=torch.float32))
+            gt_classes.append(torch.as_tensor(classes, dtype=torch.int64))
         
         #Padding the bboxes and classes with the value of -1 which is the numerical value for ignore
         if self.pad:

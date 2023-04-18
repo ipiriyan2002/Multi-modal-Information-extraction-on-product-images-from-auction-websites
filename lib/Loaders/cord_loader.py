@@ -186,8 +186,8 @@ class CordDataset(tu.data.Dataset):
             #Label processing
             boxes, classes = self.getTargets(gt)
             #Append tensor form of boxes and classes with dtype set to float32
-            gt_bboxes.append(torch.tensor(boxes, dtype=torch.float32))
-            gt_classes.append(torch.tensor(classes, dtype=torch.int64))
+            gt_bboxes.append(torch.as_tensor(boxes, dtype=torch.float32))
+            gt_classes.append(torch.as_tensor(classes, dtype=torch.int64))
             
         #Pad boxes and classes such that all elements are of same shape
         #-1 -> ignore when training
@@ -197,7 +197,7 @@ class CordDataset(tu.data.Dataset):
         
         #Putting all the data into dictionary format
         gt_targets = lu.packTargets(gt_bboxes, gt_classes)
-            
+        
         return gt_imgs, gt_targets
 
 
