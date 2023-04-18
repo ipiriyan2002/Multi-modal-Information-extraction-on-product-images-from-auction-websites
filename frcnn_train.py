@@ -55,7 +55,7 @@ def getFasterRCNN(aspect_sizes, aspect_ratios, num_classes):
 def train_epoch(model, optimizer, loader, device):
     model.train()
     epoch_start = time.time()
-    batch_no = 1
+    batch_no = 0
     temp_losses = 0
     scalar = torch.cuda.amp.GradScaler()
     for images, targets in loader:
@@ -86,7 +86,10 @@ def main(device, worldsize, config_name):
     config_file = ConfigLoader(config_name)
     
     #Logger
-    logger = TrainingLogger(config_file)
+    logger = TrainingLogger(config_file, worldsize)
+    
+    if device == 0:
+        logger.init_print_settings()
     
     #Model
     model = getFasterRCNN((config_file.get('ANCHOR_SCALES'),), (config_file.get('ANCHOR_RATIOS'),), config_file.get('NUM_CLASSES'))

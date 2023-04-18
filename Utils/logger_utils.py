@@ -6,8 +6,9 @@ class TrainingLogger:
     """
     Training logger that logs,saves and prints model / training data
     """
-    def __init__(self, settings):
+    def __init__(self, settings, world_size=1):
         self.settings = settings
+        self.worldsize = world_size
         
         self.checkpoint_path = settings.get("SAVE_PATH_CHECKPOINT")
         self.best_path = settings.get("SAVE_PATH_BEST")
@@ -28,13 +29,15 @@ class TrainingLogger:
         
         self.current_epoch = 0
         self.current_loss = 1e6
+        self.loss_dict = {}
+        self.prev_loss_dict = {}
         self.prev_loss = 1e6 
         
         self.eval_metrics = {"map": -1}
         self.prev_map = -1
         
         self.duration = 0
-        self.init_print_settings()
+        #self.init_print_settings()
     
     
     def init_print_settings(self):
@@ -44,6 +47,7 @@ class TrainingLogger:
         pp_ = "="*30
         print(f"{pp_}Settings{pp_}",flush=True)
         print("|>>>{0}--{1}\n".format(self.settings.get("BACKBONE"), self.settings.get("DATASET")),flush=True)
+        print(f"|>>>NUM GPUS: {self.worldsize}\n", flush=True)
         print(f"|>>>EPOCHS: {self.total_epochs}\n",flush=True)
         print(f"|>>>INITIAL LEARNING RATE: {self.lr}\n",flush=True)
         print("|>>>BATCH: {0} | VALIDATION BATCH: {1}\n".format(self.settings.get("BATCH"), self.settings.get("VAL_BATCH")),flush=True)
@@ -61,10 +65,12 @@ class TrainingLogger:
         
         return {
             "epoch": self.current_epoch,
+            "loss_dict": self.loss_dict,
             "loss": self.current_loss,
             "mAP": self.eval_metrics['map'],
             "model_dict": model_dict,
-            "optimizer_dict": optimizer.state_dict()
+            "optimizer_dict": optimizer.state_dict(),
+            "config": self.settings.getDict()
         }
     
     def bestSave(self, model, optimizer):
@@ -91,7 +97,7 @@ class TrainingLogger:
         """
         with open(self.log_path, "a") as f:
             map_value = self.eval_metrics["map"]
-            f.write(f"{self.current_epoch}-{self.current_loss}-{map_value}")
+            f.write(f"{self.current_epoch}-{self.current_loss}-{map_value}\n")
         
     def save(self, model, optimizer):
         """
@@ -123,15 +129,20 @@ class TrainingLogger:
         """
         print(f"<<<{self.current_epoch}>>> Loss: {self.current_loss} | LR: {self.lr} | Duration: {str(timedelta(seconds = self.duration))}",flush=True)
         
+        if len(self.loss_dict) > 0:
+            printLosses = [f"{k}:{v}" for k,v in self.loss_dict.items()]
+            print("\n<<<{0}>>> {1}".format(self.current_epoch, " | ".join(printLosses)), flush=True)
+        
         self.summarizeMetrics()
         
-    def update(self, losses, epoch, duration, model, optimizer, eval_metric={"map": -1}):
+    def update(self, losses, epoch, duration, model, optimizer, eval_metric={"map": -1}, losses_dict={}):
         """
         Update values per epoch
         """
         self.prev_loss = self.current_loss
         self.current_loss = losses
-        
+        self.prev_loss_dict = self.loss_dict
+        self.loss_dict = losses_dict
         self.current_epoch = epoch
         self.prev_map = self.eval_metrics['map']
         self.eval_metrics = eval_metric

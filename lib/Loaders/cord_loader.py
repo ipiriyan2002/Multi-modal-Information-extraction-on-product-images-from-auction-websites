@@ -31,7 +31,7 @@ Classes in Cord dataset:
 
 
 class CordDataset(tu.data.Dataset):
-    def __init__(self, path, target_size, split, pad=True):
+    def __init__(self, path, target_size, split, text_object=True, pad=True):
         """
         Arguments:
             path (string): path to directory
@@ -40,10 +40,10 @@ class CordDataset(tu.data.Dataset):
             split (string): split type of dataset
                             Either 'train', 'test' or 'validation'
         """
-        assert (split in ['train', 'test', 'validation']) 
+        assert (split.lower() in ['train', 'test', 'validation']) 
         
         self.path = path
-        
+        self.text_object = text_object
         if len(target_size) == 3:
             self.target_height, self.target_width, self.target_depth = target_size
         elif len(target_size) == 2:
@@ -53,8 +53,9 @@ class CordDataset(tu.data.Dataset):
             
         self.classes = self.getClasses()
         self.cls_dict = self.getClassDict()
-        self.split = split
+        self.split = split.lower() 
         self.pad = pad
+        
         #Defining the split dict, with each value contains a list containing file names
         self.splitDict = {
             'train' : ["train-00000-of-00004-b4aaeceff1d90ecb.parquet", "train-00001-of-00004-7dbbe248962764c5.parquet",
@@ -88,14 +89,16 @@ class CordDataset(tu.data.Dataset):
         Return:
             classes (list) : all available classes in cord dataset
         """
-        classes = ['menu.cnt', 'menu.discountprice', 'menu.etc', 'menu.itemsubtotal',
+        classes = ['background','menu.cnt', 'menu.discountprice', 'menu.etc', 'menu.itemsubtotal',
                    'menu.nm', 'menu.num', 'menu.price', 'menu.sub.cnt', 'menu.sub.nm', 'menu.sub.price',
                    'menu.sub.unitprice', 'menu.unitprice', 'menu.vatyn', 'sub_total.discount_price', 'sub_total.etc',
                    'sub_total.othersvc_price', 'sub_total.service_price', 'sub_total.subtotal_price', 'sub_total.tax_price',
                    'total.cashprice', 'total.changeprice', 'total.creditcardprice', 'total.emoneyprice', 'total.menuqty_cnt',
                    'total.menutype_cnt', 'total.total_etc', 'total.total_price', 'void_menu.nm', 'void_menu.price']
         
-        return classes
+        text_object_classes = ['background', 'text']
+        
+        return classes if not(self.text_object) else text_object_classes
     
     
     def getClassDict(self):
@@ -105,9 +108,8 @@ class CordDataset(tu.data.Dataset):
             Classes dictionary: (key:value) (classes name: numerical value for class)
         """
         class_dict = {}
-        class_dict['background'] = 0
         for class_value_, class_ in enumerate(self.classes):
-            class_dict[class_] = class_value_ + 1
+            class_dict[class_] = class_value_
         
         return class_dict
     
@@ -157,7 +159,8 @@ class CordDataset(tu.data.Dataset):
                 if lu.isBox(norm_box):
                     #Append normalised bounding boxes and numerical value of class
                     boxes.append(norm_box)
-                    classes.append(self.cls_dict[line['category']])
+                    category = line['category'] if not(self.text_object) else 'text'
+                    classes.append(self.cls_dict[category])
 
         return boxes, classes
         

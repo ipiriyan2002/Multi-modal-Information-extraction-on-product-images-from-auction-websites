@@ -1,5 +1,6 @@
 #Dataset and split
 DATASET: cordv2
+CORD_V2_PATH: /scratch/ik3g20/data/cordv2/
 SPLIT: train
 NUM_CLASSES: 2
 
@@ -23,11 +24,11 @@ GAMMA: 0.1
 
 
 #Save paths
-SAVE_PATH_CHECKPOINT: ./Saved_Models/FRCNN_cordv2_E100_B4/
-SAVE_PATH_BEST: ./Saved_Models/FRCNN_cordv2_E100_B4/Best_Model/
+SAVE_PATH_CHECKPOINT: /scratch/ik3g20/Saved_Models/cordv2_E100_B4/
+SAVE_PATH_BEST: /scratch/ik3g20/Saved_Models/cordv2_E100_B4/Best_Model/
 
 #Anchor and proposal generation
 ANCHOR_SCALES: [4,8,16,32]
 
 #Train
-NUM_WORKERS: 0
+NUM_WORKERS: 2

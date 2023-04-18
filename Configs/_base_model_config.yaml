@@ -5,6 +5,7 @@ FEAT_SCALAR: 16
 NUM_CLASSES: -1
 PRETRAINED: True
 PRETRAINED_PATH: data/pretrained/vgg16/vgg16-397923af.pth
+PAD: False
 
 #Image setting
 IMG_WIDTH: 256
@@ -20,6 +21,7 @@ BATCH: 16
 VAL_BATCH: 8
 
 #Optimizer
+OPT_TYPE: SGD
 L_RATE: 0.001
 MOMENTUM: 0.9
 W_DECAY: 0.0005
@@ -60,3 +62,4 @@ SEPERATE_TRAIN: False
 NUM_WORKERS: 2
 SAVE_PATH_CHECKPOINT: ./Saved_Models/Temp/
 SAVE_PATH_BEST: ./Saved_Models/Temp/Best_Model/
+DDP: True

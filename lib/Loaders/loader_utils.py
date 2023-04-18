@@ -15,12 +15,19 @@ def normaliseToTarget(box, og_size, target_size):
         height, width = og_size
         target_height, target_width = target_size
         
-        return [
-            int(box[0] / (width/target_width)),
-            int(box[1] / (height/target_height)),
-            int(box[2] / (width/target_width)),
-            int(box[3] / (height/target_height))
-        ]
+        #Normalise from original size
+        box[0] /= width
+        box[1] /= height
+        box[2] /= width
+        box[3] /= height
+        
+        #Unnormalise to target_size
+        box[0] *= target_width
+        box[1] *= target_height
+        box[2] *= target_width
+        box[3] *= target_height
+        
+        return box
     
 
 def isBox(box):

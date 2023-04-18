@@ -146,8 +146,8 @@ class ROINetwork(torch.nn.Module):
         }
         
         roi_loss = {
-            "boxes_loss": locs_loss,
-            "scores_loss": scores_loss
+            "roi_bbox_loss": locs_loss,
+            "roi_cls_loss": scores_loss
         }
         
         

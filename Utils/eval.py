@@ -13,18 +13,36 @@ def evaluate(model, test_loader, ious=None, device=torch.device('cpu'), custom=F
             map_evaluator = MeanAveragePrecision(iou_thresholds=ious)
 
         for images, targets in test_loader:
-            images = [image.to(device) for image in images]
-            targets = [{k:v.to(device) for k,v in target.items()} for target in targets]
-            
-            if torch.cuda.is_available():
-                torch.cuda.synchronize()
             
             if custom:
-                out = model.inference(images)
+                images = images.to(device)
+                
+                targets_final =[]
+                for index, _ in enumerate(targets['boxes']):
+                    dict_ = {k:v[index].to(device) for k,v in targets.items()}
+                    targets_final.append(dict_)
+                
+                out_dict = model.inference(images)
+                
+                out = []
+                for index, box in enumerate(out_dict['boxes']):
+                    dict_ = {
+                        "boxes":box,
+                        "scores":out_dict['scores'][index],
+                        "labels":out_dict['labels'][index]
+                    }
+                    
+                    out.append(dict_)
+                
+                map_evaluator.update(out, targets_final)
+                
             else:
+                images = [image.to(device) for image in images]
+                targets = [{k:v.to(device) for k,v in target.items()} for target in targets]
+                
                 out = model(images)
 
-            map_evaluator.update(out, targets)
+                map_evaluator.update(out, targets)
 
         computed = map_evaluator.compute()
     

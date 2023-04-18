@@ -47,3 +47,10 @@ class ConfigLoader:
         Get the final dict
         """
         return self.final_dict
+    
+    def setDict(self, dict_):
+        self.final_dict = dict_
+    
+    def setValue(self, key, value):
+        
+        self.final_dict[key] = value

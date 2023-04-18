@@ -70,7 +70,13 @@ class FRCNNDetector(nn.Module):
         
         roi_out['boxes'] = self.generateProposals(roi_out['boxes'], roi_out['rois'])
         
-        return rpn_loss, roi_loss, roi_out
+        #Get all losses into one loss dict
+        loss_dict = {}
+        for losses in [rpn_loss,roi_loss]:
+            for k,v in losses:
+                loss_dict[k] = v
+        
+        return loss_dict, roi_out
     
     def inference(self, images, nms_thresh=0.7, conf_thresh=0.5):
         with torch.no_grad():
