@@ -12,21 +12,22 @@ import argparse
 def parse_args():
     parser = argparse.ArgumentParser(description='Train custom model')
     parser.add_argument("config", help="config file")
+    parser.add_argument("--socket", default="28960", help="master_port")
     parser.add_argument("--resume", action='store_true', default=False, help="resume from checkpoint")
-    parser.add_argument("--resume-path", defualt="", help="checkpoint path")
+    parser.add_argument("--resume-path", default="", help="checkpoint path")
     args = parser.parse_args()
     
     return args
 
-def setupDDP(rank, worldsize):
+def setupDDP(rank, worldsize, port_socket):
     os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "28961"
+    os.environ["MASTER_PORT"] = port_socket
     
     init_process_group(backend="nccl", rank=rank, world_size=worldsize)
 
 
 def runDDPTraining(rank, worldsize, config_name, args):
-    setupDDP(rank, worldsize)
+    setupDDP(rank, worldsize, args.socket)
     modelTrainer = Trainer(rank, settings=config_name, with_val=True, world_size=worldsize,resume=args.resume, resume_path=args.resume_path)
     modelTrainer.train()
     destroy_process_group()

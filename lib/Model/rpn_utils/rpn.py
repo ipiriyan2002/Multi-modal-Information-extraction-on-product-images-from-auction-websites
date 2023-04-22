@@ -63,9 +63,9 @@ class RegionProposalNetwork(nn.Module):
         calculate the confidence score loss for only predictions that correspond to positive rois
         """
         gt_confs = gt_confs.type_as(pred_confs)
-        weights = torch.abs((gt_confs == 1).type(torch.int64)).view(batch_size, -1).type_as(gt_confs)
+        weights = torch.abs((gt_confs >= 0).type(torch.int64)).view(batch_size, -1).type_as(gt_confs)
         
-        loss = torch.nn.functional.binary_cross_entropy_with_logits(pred_confs, gt_confs * weights)
+        loss = torch.nn.functional.binary_cross_entropy_with_logits(pred_confs * weights, gt_confs * weights)
         
         return loss
     

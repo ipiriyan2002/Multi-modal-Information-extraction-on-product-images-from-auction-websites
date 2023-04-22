@@ -73,7 +73,7 @@ class FRCNNDetector(nn.Module):
         #Get all losses into one loss dict
         loss_dict = {}
         for losses in [rpn_loss,roi_loss]:
-            for k,v in losses:
+            for k,v in losses.items():
                 loss_dict[k] = v
         
         return loss_dict, roi_out

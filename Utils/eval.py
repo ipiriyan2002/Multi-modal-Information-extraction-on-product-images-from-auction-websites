@@ -18,11 +18,13 @@ def evaluate(model, test_loader, ious=None, device=torch.device('cpu'), custom=F
                 images = images.to(device)
                 
                 targets_final =[]
-                for index, _ in enumerate(targets['boxes']):
-                    dict_ = {k:v[index].to(device) for k,v in targets.items()}
+                for index, box in enumerate(targets['boxes']):
+                    pos = torch.unique(torch.where(box >= 0)[0])
+                    dict_ = {k:v[index][pos].to(device) for k,v in targets.items() if k != "image_id"}
+                    dict_["image_id"] = targets["image_id"][index]
                     targets_final.append(dict_)
                 
-                out_dict = model.inference(images)
+                out_dict = model.module.inference(images)
                 
                 out = []
                 for index, box in enumerate(out_dict['boxes']):

@@ -11,21 +11,17 @@ def parse_args():
         args : parsed arguments
     """
     parser = argparse.ArgumentParser(description='Download Pascal 2007 Dataset')
-    parser.add_argument("--target-dir", help="target directory for dataset")
-    parser.add_argument("--split", help="the split to download")
+    parser.add_argument("--target-dir", default="./data/",help="target directory for dataset")
+    parser.add_argument("--split", default="train",help="the split to download")
     args = parser.parse_args()
     
     return args
 
 if __name__ == "__main__":
     args = parse_args()
-    tdir = "./Data/"
-    split = "train"
+    tdir = args.target_dir
+    split = args.split
     
-    if args.target_dir:
-        tdir = args.target_dir
-    if args.split:
-        split = args.split
     #Download the voc 2007 dataset
     load_voc_2007(target_dir=tdir, split=split)
     

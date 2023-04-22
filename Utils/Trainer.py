@@ -15,7 +15,7 @@ import numpy as np
 
 
 class Trainer():
-    def __init__(self, device, settings, with_val=True, world_size=1, resume=False, resume_path=""):
+    def __init__(self, device, settings, with_val=True, world_size=1, resume=False, resume_path="", override_settings=True):
         """
         Arguments:
             device: device
@@ -24,10 +24,9 @@ class Trainer():
             resume_path : checkpoint path
         """
         #normal settings
-        self.loadedSettings = ConfigLoader(settings)
+        self.settings = ConfigLoader(settings)
         
         resume_dict = {
-            "config":self.loadedSettings.getDict(),
             "epoch": 0,
             "loss": 1e14
                       }
@@ -36,10 +35,11 @@ class Trainer():
             assert len(resume_path) > 1, "To resume, give resume pytorch dict"
             
             resume_dict = torch.load(resume_path)
+            
         
-        
-        #Make sure we have config name
-        self.settings = self.loadedSettings.setDict(resume_dict["config"])
+            if not(override_settings):
+                self.settings.setDict(resume_dict["config"])
+
         self.with_val = with_val
         self.device = device
         #Resume point is initially 0
@@ -53,9 +53,9 @@ class Trainer():
             self.logger.init_print_settings()
         
         #Defining training and validation loader
-        train_loader = self.getDataLoader(split="train")
+        self.train_loader = self.getDataLoader(split="train")
         if self.with_val:
-            val_loader = self.getDataLoader(split="validation")
+            self.val_loader = self.getDataLoader(split="validation")
         
         #Defining model
         self.model = FRCNNDetector(self.settings)
@@ -104,14 +104,14 @@ class Trainer():
         start_ = time.time()
         
         #Get dataset
-        dataset = BaseDataset(self.settings, pad=True, split=split)
+        dataset = BaseDataset(self.settings, pad=self.settings.get("PAD"), split=split)
         #Get loader
         loader = DataLoader(
             dataset.getDataset(),
             batch_size=self.settings.get("BATCH"),
             shuffle=(split=="train"),
             pin_memory=True,
-            num_worker=self.settings.get("NUM_WORKERS")
+            num_workers=self.settings.get("NUM_WORKERS")
         )
         
         duration = time.time() - start_
@@ -146,6 +146,7 @@ class Trainer():
         scalar = torch.cuda.amp.GradScaler()
         
         for images, targets in self.train_loader:
+            self.optimizer.zero_grad()
             batch_no += 1
             images = images.to(self.device)
             targets = {k:v.to(self.device) for k,v in targets.items()}
@@ -175,7 +176,7 @@ class Trainer():
         eval_metrics = {"map":-1}
         if epoch % self.settings.get("VAL_EPOCH") == 0 and self.with_val:
             eval_start = time.time()
-            eval_metrics = evaluate(self.model,self.val_loader,device=self.device)
+            eval_metrics = evaluate(self.model,self.val_loader,custom=True,device=self.device)
             eval_duration = time.time() - eval_start
             
             print(f"Evaluated in: {str(datetime.timedelta(seconds = eval_duration))}", flush=True)

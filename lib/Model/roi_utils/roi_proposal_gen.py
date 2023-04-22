@@ -42,13 +42,14 @@ class ROIProposalGenerator(nn.Module):
         
         return iou_matrix
     
-    def subsample(self, pos_indexes, neg_indexes):
+    def subsample(self, pos_indexes, neg_indexes, pad_indexes):
         """
         Given positive indexes and negative indexes subsample such that the number of positive and negative, in total, equals max samples
         Returns the indexes to keep
         """
         num_pos = pos_indexes.size(dim=0)
         num_neg = neg_indexes.size(dim=0)
+        num_pads = pad_indexes.size(dim=0)
         
         max_pos_samples = int(self.max_samples * self.ratio_pos_neg)
         max_neg_samples = self.max_samples - max_pos_samples
@@ -58,18 +59,29 @@ class ROIProposalGenerator(nn.Module):
         
         if num_pos > max_pos_samples:
             replace = num_pos < max_pos_samples
-            rand_keep = torch.multinomial(torch.arange(0,num_pos), num_samples=max_pos_samples, replacement=replace)
+            rand_keep = torch.multinomial(torch.arange(0,num_pos,dtype=torch.float32), num_samples=max_pos_samples, replacement=replace)
             pos_samples = pos_indexes[...,1][rand_keep]
+        else:
+            max_neg_samples += max_pos_samples - num_pos
         
         if num_neg > max_neg_samples:
             replace = num_neg < max_pos_samples
-            rand_keep = torch.multinomial(torch.arange(0,num_neg), num_samples=max_neg_samples, replacement=replace)
+            rand_keep = torch.multinomial(torch.arange(0,num_neg,dtype=torch.float32), num_samples=max_neg_samples, replacement=replace)
             neg_samples = neg_indexes[...,1][rand_keep]
         
         keep = torch.cat([pos_samples, neg_samples])
         num_pos_targets = pos_samples.size(0)
         
-        return keep, num_pos_targets
+        #Get the random pads
+        max_pads = self.max_samples - keep.size(0)
+        
+        if max_pads > 0:
+            pads_rand_keep = torch.multinomial(torch.arange(0,num_pads,dtype=torch.float32), num_samples=max_pads, replacement=(num_pads < max_pads))
+            pad_samples = pad_indexes[...,1][pads_rand_keep]
+        else:
+            pad_samples = torch.tensor([])
+        
+        return keep, pad_samples, num_pos_targets
         
     
     def forward(self, proposals, gt_bboxes, gt_orig_classes):
@@ -122,17 +134,26 @@ class ROIProposalGenerator(nn.Module):
         neg_indexes_positions = torch.logical_and(neg_indexes_positions, notNan)
         neg_indexes = torch.nonzero(neg_indexes_positions)
         
+        #Get bounding boxes to pad the training samples to remove cases of nan error
+        pad_indexes_positions = torch.logical_and(max_ious < self.neg_iou_thresh[1], notNan)
+        pad_indexes = torch.nonzero(pad_indexes_positions)
+        
         #Subsample and gather the training data
         for batch in range(batch_size):
-            keep_index, num_pos_targets = self.subsample(pos_indexes[pos_indexes[...,0] == batch], neg_indexes[neg_indexes[...,0] == batch])
+            keep_index, pad_index, num_pos_targets = self.subsample(pos_indexes[pos_indexes[...,0] == batch], neg_indexes[neg_indexes[...,0] == batch], pad_indexes[pad_indexes[...,0] == batch])
+            
             #Get labels
             gt_labels[batch, :keep_index.size(0)] = target_classes[batch, keep_index]
             gt_labels[batch, num_pos_targets:] = 0
             #Get proposals
             rois[batch, :keep_index.size(0), :] = proposals[batch, keep_index, :]
-            
             #Get ground truth boxes
             gt_boxes_per_rois[batch, :keep_index.size(0), :] = target_bboxes[batch, keep_index, :]
+            
+            #Pad the boxes with background data to remove cases of nan error
+            if pad_index.size(0) > 0:
+                rois[batch, keep_index.size(0):, :] = proposals[batch, pad_index, :]
+                gt_boxes_per_rois[batch, keep_index.size(0):, :] = target_bboxes[batch, pad_index, :]
         
         #Generate the offsets
         rois = ops.box_convert(rois, in_fmt='xyxy', out_fmt='cxcywh')

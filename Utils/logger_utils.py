@@ -1,6 +1,7 @@
 import torch
 import os
 from datetime import timedelta
+import yaml
 
 class TrainingLogger:
     """
@@ -13,6 +14,7 @@ class TrainingLogger:
         self.checkpoint_path = settings.get("SAVE_PATH_CHECKPOINT")
         self.best_path = settings.get("SAVE_PATH_BEST")
         self.log_path = os.path.join(self.checkpoint_path, "log.txt")
+        self.settings_save_path = os.path.join(self.checkpoint_path, "settings.yaml")
         
         try:
             os.makedirs(self.checkpoint_path)
@@ -38,7 +40,10 @@ class TrainingLogger:
         
         self.duration = 0
         #self.init_print_settings()
-    
+        
+        
+        with open(self.settings_save_path, 'w') as f:
+            _ = yaml.dump(self.settings.getDict(), f)
     
     def init_print_settings(self):
         """
@@ -53,6 +58,7 @@ class TrainingLogger:
         print("|>>>BATCH: {0} | VALIDATION BATCH: {1}\n".format(self.settings.get("BATCH"), self.settings.get("VAL_BATCH")),flush=True)
         print("|>>>IMAGE SIZE: {0}x{1}x{2}\n".format(self.settings.get("IMG_HEIGHT"), self.settings.get("IMG_WIDTH"), self.settings.get("CHANNELS")),flush=True)
         print("|>>>SEPERATE TRAINING: {0}\n".format(self.settings.get("SEPERATE_TRAIN")), flush=True)
+        print(f"{pp_}========{pp_}",flush=True)
     
     def getSaveDict(self, model, optimizer):
         """
@@ -69,8 +75,7 @@ class TrainingLogger:
             "loss": self.current_loss,
             "mAP": self.eval_metrics['map'],
             "model_dict": model_dict,
-            "optimizer_dict": optimizer.state_dict(),
-            "config": self.settings.getDict()
+            "optimizer_dict": optimizer.state_dict()
         }
     
     def bestSave(self, model, optimizer):
@@ -120,7 +125,7 @@ class TrainingLogger:
         Summarize the evaluation metrics
         """
         if len(self.eval_metrics) > 1:
-            metric_string = ["{0}:{1}".format(k,v*100) for k,v in self.eval_metrics.items()]
+            metric_string = ["{}:{:.3f}".format(k,v*100) for k,v in self.eval_metrics.items()]
             print("\n".join(metric_string), flush=True)
 
     def summarize(self):

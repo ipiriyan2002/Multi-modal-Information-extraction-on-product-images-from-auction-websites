@@ -40,6 +40,10 @@ class ROINetwork(torch.nn.Module):
         #scores for the locations
         self.classes = torch.nn.Linear(self.in_features, self.num_classes)
         
+        #normalization
+        self.normalize_mean = torch.tensor(normalize_mean, dtype=torch.float32)
+        self.normalize_std = torch.tensor(normalize_std, dtype=torch.float32)
+        
         #ROI
         self.roi = torchvision.ops.RoIPool((self.roi_height, self.roi_width), self.spatial_scale)
         
@@ -64,10 +68,18 @@ class ROINetwork(torch.nn.Module):
         return loss
     
     def regression_loss(self, pred_boxes, gt_boxes, gt_classes):
+        
         gt_boxes = gt_boxes.type_as(pred_boxes)
+        gt_boxes = gt_boxes.view(-1,4)
+        pred_boxes = pred_boxes.view(-1,4)
         #Get the bounding boxes for the correct label
         
-        loss = torch.nn.functional.smooth_l1_loss(pred_boxes, gt_boxes.view(-1, 4))
+        pos = (gt_classes >= 1).type(torch.int64) * 1
+        
+        weights = torch.abs(pos)
+        weights = weights.view(-1, 1).type_as(gt_boxes)
+        
+        loss = torch.nn.functional.smooth_l1_loss(pred_boxes * weights, gt_boxes * weights)
         
         return loss
     
@@ -172,9 +184,14 @@ class ROINetwork(torch.nn.Module):
                                       labels_.view(labels_.size(dim=0), 1, 1).expand(labels_.size(dim=0), 1, 4))
             
             pred_boxes = pred_boxes.squeeze(1)
+            pred_boxes = pred_boxes.view(batch_size, -1, 4)
+            
+            #normalize predictions
+            pred_boxes = pred_boxes * self.normalize_std.type_as(pred_boxes).expand_as(pred_boxes)
+            pred_boxes = pred_boxes + self.normalize_mean.type_as(pred_boxes).expand_as(pred_boxes)
             
             roi_out = {
-                "boxes": pred_boxes.view(batch_size, -1, 4),
+                "boxes": pred_boxes,
                 "scores": scores_probs_gathered,
                 "labels": labels
             }

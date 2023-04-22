@@ -23,20 +23,22 @@ import os, io, time, datetime, argparse
 def parse_args():
     parser = argparse.ArgumentParser(description='Train Faster RCNN pre-implemented in pytorch')
     parser.add_argument("config", help="config file")
+    parser.add_argument("--socket", default="28961", help="socket")
+    parser.add_argument("--resume-path", default="", help="weights path for resuming")
     args = parser.parse_args()
     
     return args
 
-def setupDDP(rank, worldsize):
+def setupDDP(rank, worldsize,socket):
     os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "28961"
+    os.environ["MASTER_PORT"] = socket
     
     init_process_group(backend="nccl", rank=rank, world_size=worldsize)
 
 
-def runDDPTraining(rank, worldsize, config_name):
-    setupDDP(rank, worldsize)
-    main(rank, worldsize, config_name=config_name)
+def runDDPTraining(rank, worldsize, config_name,args):
+    setupDDP(rank, worldsize,args.socket)
+    main(rank, worldsize, config_name=config_name, resume_path=args.resume_path)
     destroy_process_group()
 
 #=====Model Functions=====
@@ -66,6 +68,7 @@ def train_epoch(model, optimizer, loader, device):
         
         with torch.cuda.amp.autocast():
             losses = model(images, targets)
+            print(losses)
             losses = sum([loss for loss in losses.values()])
         
         temp_losses += float(losses)
@@ -82,7 +85,7 @@ def collate(batch):
     return list(zip(*batch))
 
 #=====Main Function=====
-def main(device, worldsize, config_name):
+def main(device, worldsize, config_name, resume_path):
     config_file = ConfigLoader(config_name)
     
     #Logger
@@ -94,6 +97,22 @@ def main(device, worldsize, config_name):
     #Model
     model = getFasterRCNN((config_file.get('ANCHOR_SCALES'),), (config_file.get('ANCHOR_RATIOS'),), config_file.get('NUM_CLASSES'))
     model = model.to(device)
+    
+    #Optimizer
+    optimizer = torch.optim.SGD(model.parameters(), lr=config_file.get('L_RATE'), momentum=config_file.get('MOMENTUM'), weight_decay=config_file.get('W_DECAY'))
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=config_file.get('STEP_SIZE'), gamma=config_file.get('GAMMA'))
+    
+    if resume_path != "":
+        try:
+            resume_dict = torch.load(resume_path)
+        except:
+            raise ValueError("Expected pytorch save file")
+        
+        start_epoch = resume_dict['epoch']
+        model.load_state_dict(resume_dict['model_dict'])
+        optimizer.load_state_dict(resume_dict['optimizer_dict'])
+    else:
+        start_epoch = 0
     
     #Dataset
     load_time = time.time()
@@ -110,13 +129,9 @@ def main(device, worldsize, config_name):
     if device == 0:
         print(f"Dataset Loading Time: {str(datetime.timedelta(seconds = duration))}", flush=True)
     
-    #Optimizer
-    optimizer = torch.optim.SGD(model.parameters(), lr=config_file.get('L_RATE'), momentum=config_file.get('MOMENTUM'), weight_decay=config_file.get('W_DECAY'))
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=config_file.get('STEP_SIZE'), gamma=config_file.get('GAMMA'))
-    
     total_start = time.time()
     
-    for epoch in range(config_file.get('EPOCHS')):
+    for epoch in range(start_epoch, config_file.get('EPOCHS')):
         #Train for one epoch
         losses, duration = train_epoch(model, optimizer, train_loader, device)
             
@@ -143,4 +158,4 @@ if __name__ == "__main__":
     args = parse_args()
     config_name = args.config
     worldsize = torch.cuda.device_count()
-    mp.spawn(runDDPTraining, args=(worldsize, config_name), nprocs=worldsize)
+    mp.spawn(runDDPTraining, args=(worldsize, config_name,args), nprocs=worldsize)
