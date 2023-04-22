@@ -9,6 +9,7 @@ from torchvision.models.detection import FasterRCNN
 from torchvision.models.detection.rpn import AnchorGenerator
 import torch.multiprocessing as mp
 from torch.distributed import init_process_group, destroy_process_group
+from torch.nn.parallel import DistributedDataParallel as DDP
 #Import custom packages
 from lib.Loaders.base_dataset import BaseDataset
 from Utils.utils import load_config_file
@@ -68,7 +69,6 @@ def train_epoch(model, optimizer, loader, device):
         
         with torch.cuda.amp.autocast():
             losses = model(images, targets)
-            print(losses)
             losses = sum([loss for loss in losses.values()])
         
         temp_losses += float(losses)
@@ -113,6 +113,11 @@ def main(device, worldsize, config_name, resume_path):
         optimizer.load_state_dict(resume_dict['optimizer_dict'])
     else:
         start_epoch = 0
+    
+    if config_file.get("DDP"):
+        model = DDP(
+            model, device_ids=[device], find_unused_parameters=True
+        )
     
     #Dataset
     load_time = time.time()
