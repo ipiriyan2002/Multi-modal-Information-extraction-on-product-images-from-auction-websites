@@ -94,6 +94,23 @@ def main(device, worldsize, config_name, resume_path):
     if device == 0:
         logger.init_print_settings()
     
+    #Dataset
+    #Defining the dataset before Model to make sure the number of classes is the same for the network as the dataset
+    load_time = time.time()
+    
+    train_dataset = BaseDataset(config_file, pad=False, split='train')
+    val_dataset = BaseDataset(config_file, pad=False, split='validation')
+    
+    #Data loaders
+    train_loader = tu.data.DataLoader(train_dataset.getDataset(), batch_size=config_file.get('BATCH'), shuffle=True, pin_memory=True, num_workers=0*worldsize, collate_fn=collate)
+    
+    val_loader = tu.data.DataLoader(val_dataset.getDataset(), batch_size=config_file.get('VAL_BATCH'), shuffle=False, pin_memory=True, num_workers=0*worldsize, collate_fn=collate)
+    
+    duration = time.time() - load_time
+    if device == 0:
+        print(f"Dataset Loading Time: {str(datetime.timedelta(seconds = duration))}", flush=True)
+
+    
     #Model
     model = getFasterRCNN((config_file.get('ANCHOR_SCALES'),), (config_file.get('ANCHOR_RATIOS'),), config_file.get('NUM_CLASSES'))
     model = model.to(device)
@@ -118,21 +135,6 @@ def main(device, worldsize, config_name, resume_path):
         model = DDP(
             model, device_ids=[device], find_unused_parameters=True
         )
-    
-    #Dataset
-    load_time = time.time()
-    
-    train_dataset = BaseDataset(config_file, pad=False, split='train')
-    val_dataset = BaseDataset(config_file, pad=False, split='validation')
-    
-    #Data loaders
-    train_loader = tu.data.DataLoader(train_dataset.getDataset(), batch_size=config_file.get('BATCH'), shuffle=True, pin_memory=True, num_workers=0*worldsize, collate_fn=collate)
-    
-    val_loader = tu.data.DataLoader(val_dataset.getDataset(), batch_size=config_file.get('VAL_BATCH'), shuffle=False, pin_memory=True, num_workers=0*worldsize, collate_fn=collate)
-    
-    duration = time.time() - load_time
-    if device == 0:
-        print(f"Dataset Loading Time: {str(datetime.timedelta(seconds = duration))}", flush=True)
     
     total_start = time.time()
     

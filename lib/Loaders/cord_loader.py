@@ -28,10 +28,30 @@ Classes in Cord dataset:
  
  'total.total_etc', 'total.total_price', 'void_menu.nm', 'void_menu.price']
 """
+def getClasses(type_):
+    """
+    Return:
+        classes (list) : all available classes in cord dataset
+    """
+    classes = ['background','menu.cnt', 'menu.discountprice', 'menu.etc', 'menu.itemsubtotal',
+               'menu.nm', 'menu.num', 'menu.price', 'menu.sub.cnt', 'menu.sub.nm', 'menu.sub.price',
+               'menu.sub.unitprice', 'menu.unitprice', 'menu.vatyn', 'sub_total.discount_price', 'sub_total.etc',
+               'sub_total.othersvc_price', 'sub_total.service_price', 'sub_total.subtotal_price', 'sub_total.tax_price',
+               'total.cashprice', 'total.changeprice', 'total.creditcardprice', 'total.emoneyprice', 'total.menuqty_cnt',
+               'total.menutype_cnt', 'total.total_etc', 'total.total_price', 'void_menu.nm', 'void_menu.price']
+        
+    text_object_classes = ['background', 'text']
+        
+    main_classes = ['background', 'menu', 'sub_total', 'total', 'void_menu']
+        
+    price_classes = ['background', 'others', 'price']
+        
+    out = {'text':text_object_classes, 'main':main_classes, 'price':price_classes, 'all':classes}
+    return out[type_]
 
 
 class CordDataset(tu.data.Dataset):
-    def __init__(self, path, target_size, split, text_object=True, pad=True):
+    def __init__(self, path, split, class_type="all", pad=False, transform=None):
         """
         Arguments:
             path (string): path to directory
@@ -41,20 +61,21 @@ class CordDataset(tu.data.Dataset):
                             Either 'train', 'test' or 'validation'
         """
         assert (split.lower() in ['train', 'test', 'validation']) 
+        assert (class_type.lower() in ['text', 'main','price', 'all'])
+        
         
         self.path = path
-        self.text_object = text_object
-        if len(target_size) == 3:
-            self.target_height, self.target_width, self.target_depth = target_size
-        elif len(target_size) == 2:
-            self.target_height, self.target_width = target_size
-        else:
-            raise ValueError(f"Expected dimension size of target_size to be 2 or 3, received {len(target_size)}")
-            
-        self.classes = self.getClasses()
+        self.class_type = class_type
+        self.classes = getClasses(self.class_type)
+        self.num_classes = len(self.classes)
         self.cls_dict = self.getClassDict()
         self.split = split.lower() 
         self.pad = pad
+        self.transform = transform
+        
+        self.mean = torch.tensor([0.0,0.0,0.0])
+        self.std = torch.tensor([0.0,0.0,0.0])
+        self.pixel_count = 0
         
         #Defining the split dict, with each value contains a list containing file names
         self.splitDict = {
@@ -66,6 +87,10 @@ class CordDataset(tu.data.Dataset):
         
         #Get the dataset
         self.gt_imgs, self.gt_targets = self.getDataset()
+        
+        self.mean = self.mean / self.pixel_count
+        self.std = torch.sqrt((self.std / self.pixel_count) - (self.mean ** 2))
+        
     
     def __len__(self):
         """
@@ -82,24 +107,30 @@ class CordDataset(tu.data.Dataset):
             image (torch tensor) (Depth x Height x Width)
             targets (dictionary) (dictionary containing training targets)
         """
+        if self.transform != None:
+            return self.transform(self.gt_imgs[idx], self.gt_targets[idx])
+        
         return self.gt_imgs[idx], self.gt_targets[idx]
     
-    def getClasses(self):
+
+    def getCategory(self, label):
         """
-        Return:
-            classes (list) : all available classes in cord dataset
+        Get the category depending on the class_type
         """
-        classes = ['background','menu.cnt', 'menu.discountprice', 'menu.etc', 'menu.itemsubtotal',
-                   'menu.nm', 'menu.num', 'menu.price', 'menu.sub.cnt', 'menu.sub.nm', 'menu.sub.price',
-                   'menu.sub.unitprice', 'menu.unitprice', 'menu.vatyn', 'sub_total.discount_price', 'sub_total.etc',
-                   'sub_total.othersvc_price', 'sub_total.service_price', 'sub_total.subtotal_price', 'sub_total.tax_price',
-                   'total.cashprice', 'total.changeprice', 'total.creditcardprice', 'total.emoneyprice', 'total.menuqty_cnt',
-                   'total.menutype_cnt', 'total.total_etc', 'total.total_price', 'void_menu.nm', 'void_menu.price']
-        
-        text_object_classes = ['background', 'text']
-        
-        return classes if not(self.text_object) else text_object_classes
-    
+        if self.class_type.lower() == 'all':
+            return label
+        elif self.class_type.lower() == 'main':
+            return label.split(".")[-1] if label != 'background' else 'background'
+        elif self.class_type.lower() == 'price':
+            if label == 'background':
+                return label
+            
+            if 'price' in label:
+                return 'price'
+            else:
+                return 'others'
+        else:
+            return 'text' if label != 'background' else 'background'
     
     def getClassDict(self):
         """
@@ -148,18 +179,18 @@ class CordDataset(tu.data.Dataset):
         classes = []
         vline = labels["valid_line"]
         #Get original width and height of image
-        og_width, og_height = labels['meta']['image_size']['width'], labels['meta']['image_size']['height']
+        #og_width, og_height = labels['meta']['image_size']['width'], labels['meta']['image_size']['height']
         #Using a nested loop to get all coordinates for given label
         for line in vline: #run through n lines for label
             words = line['words']
             for word in words: #run through n words in each line and retreive the coordinates of said word
                 quad = word['quad']
                 box = [quad['x1'], quad['y1'], quad['x3'], quad['y3']]
-                norm_box = lu.normaliseToTarget(box, (og_height, og_width), (self.target_height, self.target_width))
-                if lu.isBox(norm_box):
+                #norm_box = lu.normaliseToTarget(box, (og_height, og_width), (self.target_height, self.target_width))
+                if lu.isBox(box):
                     #Append normalised bounding boxes and numerical value of class
-                    boxes.append(norm_box)
-                    category = line['category'] if not(self.text_object) else 'text'
+                    boxes.append(box)
+                    category = self.getCategory(line['category'])
                     classes.append(self.cls_dict[category])
 
         return boxes, classes
@@ -181,16 +212,27 @@ class CordDataset(tu.data.Dataset):
         for pair in list_of_pairs:
             img, gt = pair
             #Image processing
-            img = img.resize((self.target_height, self.target_width)) #Resize image to target height and width
+            #img = img.resize((self.target_height, self.target_width)) #Resize image to target height and width
             img_arr = np.asarray(img, dtype='float32') / 255.0 #Normalise array
             img_arr = img_arr.transpose(-1,0,1) #Transpose array to form (Depth x Height x Width)
-            gt_imgs.append(torch.from_numpy(img_arr)) #Append tensor form from numpy array
+            img_arr = torch.from_numpy(img_arr)
+             #Append tensor form from numpy array
+            
+            #Add the pixel_counts to calculate mean and std for dataset
+            self.mean += img_arr.sum(axis=[1,2])
+            self.std += (img_arr ** 2).sum(axis=[1,2])
+            
+            self.pixel_count += img_arr.shape[1] * img_arr.shape[2]
             
             #Label processing
             boxes, classes = self.getTargets(gt)
             #Append tensor form of boxes and classes with dtype set to float32
-            gt_bboxes.append(torch.as_tensor(boxes, dtype=torch.float32))
-            gt_classes.append(torch.as_tensor(classes, dtype=torch.int64))
+            #Only add images with more than one ground truth image
+            if len(boxes) > 0:
+                gt_imgs.append(img_arr)
+                gt_bboxes.append(torch.as_tensor(boxes, dtype=torch.float32))
+                gt_classes.append(torch.as_tensor(classes, dtype=torch.int64))
+            
             
         #Pad boxes and classes such that all elements are of same shape
         #-1 -> ignore when training

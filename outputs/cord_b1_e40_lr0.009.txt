@@ -1,0 +1,355 @@
+FILES ALREADY CREATED
+==============================Settings==============================
+|>>>vgg16--cordv2
+
+|>>>NUM GPUS: 1
+
+|>>>EPOCHS: 40
+
+|>>>INITIAL LEARNING RATE: 0.009
+
+|>>>BATCH: 1 | VALIDATION BATCH: 1
+
+|>>>MIN IMAGE SIZE: 400 | MAX IMAGE SIZE: 800
+
+|>>>SEPERATE TRAINING: False
+
+====================================================================
+Dataset Loading Time: 0:01:01.987806
+[W reducer.cpp:1298] Warning: find_unused_parameters=True was specified in DDP constructor, but did not find any unused parameters in the forward pass. This flag results in an extra traversal of the autograd graph every iteration,  which can adversely affect performance. If your model indeed never has any unused parameters in the forward pass, consider turning this flag off. Note that this warning may be a false positive if your model has flow control causing later iterations to have unused parameters. (function operator())
+<<<1>>> Loss: 0.7781347443535924 | LR: 0.009 | Duration: 0:02:48.502604
+Best Model Saved
+<<<2>>> Loss: 0.6161390573903919 | LR: 0.009 | Duration: 0:02:49.668479
+map:29.685
+map_50:66.236
+map_75:21.018
+map_small:12.359
+map_medium:34.191
+map_large:27.300
+mar_1:4.866
+mar_10:31.163
+mar_100:42.506
+mar_small:23.730
+mar_medium:47.479
+mar_large:42.554
+map_per_class:-100.000
+mar_100_per_class:-100.000
+<<<3>>> Loss: 0.5038037676457315 | LR: 0.009 | Duration: 0:02:52.398625
+Best Model Saved
+<<<4>>> Loss: 0.4403073217254132 | LR: 0.009 | Duration: 0:02:50.744461
+map:38.677
+map_50:73.683
+map_75:36.784
+map_small:16.900
+map_medium:43.739
+map_large:38.197
+mar_1:5.696
+mar_10:38.767
+mar_100:52.697
+mar_small:34.319
+mar_medium:57.765
+mar_large:52.820
+map_per_class:-100.000
+mar_100_per_class:-100.000
+<<<5>>> Loss: 0.40523198125883936 | LR: 0.009 | Duration: 0:02:51.334497
+Best Model Saved
+<<<6>>> Loss: 0.3751350438315421 | LR: 0.009 | Duration: 0:02:50.179395
+map:40.832
+map_50:78.571
+map_75:37.627
+map_small:16.241
+map_medium:45.317
+map_large:44.322
+mar_1:5.797
+mar_10:38.890
+mar_100:52.348
+mar_small:33.145
+mar_medium:57.361
+mar_large:55.026
+map_per_class:-100.000
+mar_100_per_class:-100.000
+<<<7>>> Loss: 0.3602427995763719 | LR: 0.009 | Duration: 0:02:50.690269
+Best Model Saved
+<<<8>>> Loss: 0.34917977171950043 | LR: 0.009 | Duration: 0:02:51.201184
+map:41.492
+map_50:81.527
+map_75:36.439
+map_small:21.047
+map_medium:45.641
+map_large:40.686
+mar_1:5.249
+mar_10:39.596
+mar_100:52.837
+mar_small:39.495
+mar_medium:56.600
+mar_large:51.863
+map_per_class:-100.000
+mar_100_per_class:-100.000
+<<<9>>> Loss: 0.34587113132700326 | LR: 0.009 | Duration: 0:02:51.302171
+Best Model Saved
+<<<10>>> Loss: 0.3322424047626555 | LR: 0.0009 | Duration: 0:02:51.516816
+map:45.367
+map_50:82.941
+map_75:46.433
+map_small:21.889
+map_medium:50.693
+map_large:44.479
+mar_1:5.911
+mar_10:42.504
+mar_100:55.723
+mar_small:37.881
+mar_medium:60.398
+mar_large:57.297
+map_per_class:-100.000
+mar_100_per_class:-100.000
+<<<11>>> Loss: 0.24930773494299502 | LR: 0.0009 | Duration: 0:02:51.453062
+Best Model Saved
+<<<12>>> Loss: 0.23454990113154053 | LR: 0.0009 | Duration: 0:02:50.394666
+map:54.665
+map_50:87.012
+map_75:61.737
+map_small:34.262
+map_medium:58.525
+map_large:55.380
+mar_1:6.551
+mar_10:48.914
+mar_100:63.377
+mar_small:47.716
+mar_medium:67.427
+mar_large:65.330
+map_per_class:-100.000
+mar_100_per_class:-100.000
+<<<13>>> Loss: 0.23224500220268965 | LR: 0.0009 | Duration: 0:02:52.495788
+Best Model Saved
+<<<14>>> Loss: 0.228925230470486 | LR: 0.0009 | Duration: 0:02:51.110926
+map:55.771
+map_50:87.360
+map_75:64.286
+map_small:35.097
+map_medium:59.137
+map_large:57.362
+mar_1:6.792
+mar_10:49.642
+mar_100:64.576
+mar_small:49.010
+mar_medium:68.209
+mar_large:67.614
+map_per_class:-100.000
+mar_100_per_class:-100.000
+<<<15>>> Loss: 0.2287015207996592 | LR: 0.0009 | Duration: 0:02:51.637629
+Best Model Saved
+<<<16>>> Loss: 0.22856725609861314 | LR: 0.0009 | Duration: 0:02:51.930448
+map:56.867
+map_50:87.261
+map_75:64.888
+map_small:34.545
+map_medium:60.807
+map_large:60.840
+mar_1:6.900
+mar_10:50.261
+mar_100:65.539
+mar_small:48.579
+mar_medium:69.684
+mar_large:68.777
+map_per_class:-100.000
+mar_100_per_class:-100.000
+<<<17>>> Loss: 0.22372975083068014 | LR: 0.0009 | Duration: 0:02:50.161293
+<<<18>>> Loss: 0.22406637794803827 | LR: 0.0009 | Duration: 0:02:51.984429
+map:57.457
+map_50:87.445
+map_75:65.726
+map_small:34.586
+map_medium:61.262
+map_large:61.505
+mar_1:7.053
+mar_10:50.781
+mar_100:65.878
+mar_small:49.065
+mar_medium:69.758
+mar_large:69.505
+map_per_class:-100.000
+mar_100_per_class:-100.000
+<<<19>>> Loss: 0.2227378966822289 | LR: 0.0009 | Duration: 0:02:49.923218
+Best Model Saved
+<<<20>>> Loss: 0.2214131160499528 | LR: 9e-05 | Duration: 0:02:50.745826
+map:57.065
+map_50:87.657
+map_75:66.135
+map_small:34.982
+map_medium:60.640
+map_large:59.985
+mar_1:6.882
+mar_10:50.435
+mar_100:65.020
+mar_small:49.057
+mar_medium:68.730
+mar_large:68.998
+map_per_class:-100.000
+mar_100_per_class:-100.000
+<<<21>>> Loss: 0.21188739886973054 | LR: 9e-05 | Duration: 0:02:52.458010
+Best Model Saved
+<<<22>>> Loss: 0.21147162702400238 | LR: 9e-05 | Duration: 0:02:53.051943
+map:57.828
+map_50:87.614
+map_75:67.030
+map_small:34.713
+map_medium:61.661
+map_large:62.622
+mar_1:7.088
+mar_10:50.848
+mar_100:65.890
+mar_small:49.242
+mar_medium:69.727
+mar_large:70.237
+map_per_class:-100.000
+mar_100_per_class:-100.000
+<<<23>>> Loss: 0.21152941086795182 | LR: 9e-05 | Duration: 0:02:50.698555
+Best Model Saved
+<<<24>>> Loss: 0.2103672788804397 | LR: 9e-05 | Duration: 0:02:52.291374
+map:57.843
+map_50:87.710
+map_75:67.150
+map_small:35.457
+map_medium:61.525
+map_large:63.157
+mar_1:7.073
+mar_10:50.762
+mar_100:65.951
+mar_small:49.489
+mar_medium:69.618
+mar_large:70.798
+map_per_class:-100.000
+mar_100_per_class:-100.000
+<<<25>>> Loss: 0.2113695563748479 | LR: 9e-05 | Duration: 0:02:51.045763
+Best Model Saved
+<<<26>>> Loss: 0.21055416255258025 | LR: 9e-05 | Duration: 0:02:51.113606
+map:57.839
+map_50:87.173
+map_75:67.118
+map_small:35.642
+map_medium:61.522
+map_large:62.571
+mar_1:7.100
+mar_10:50.866
+mar_100:65.958
+mar_small:50.029
+mar_medium:69.633
+mar_large:70.077
+map_per_class:-100.000
+mar_100_per_class:-100.000
+<<<27>>> Loss: 0.21031140400096773 | LR: 9e-05 | Duration: 0:02:50.776654
+Best Model Saved
+<<<28>>> Loss: 0.21006129995686934 | LR: 9e-05 | Duration: 0:02:51.806450
+map:57.763
+map_50:87.164
+map_75:66.905
+map_small:35.332
+map_medium:61.354
+map_large:62.696
+mar_1:7.124
+mar_10:50.917
+mar_100:65.831
+mar_small:49.397
+mar_medium:69.680
+mar_large:70.018
+map_per_class:-100.000
+mar_100_per_class:-100.000
+<<<29>>> Loss: 0.21001936964690684 | LR: 9e-05 | Duration: 0:02:50.436160
+<<<30>>> Loss: 0.2101480349386111 | LR: 9e-06 | Duration: 0:02:52.210846
+map:57.601
+map_50:87.132
+map_75:66.496
+map_small:35.223
+map_medium:61.312
+map_large:62.677
+mar_1:7.061
+mar_10:50.730
+mar_100:65.677
+mar_small:49.018
+mar_medium:69.505
+mar_large:70.243
+map_per_class:-100.000
+mar_100_per_class:-100.000
+<<<31>>> Loss: 0.20867285892833023 | LR: 9e-06 | Duration: 0:02:52.241759
+<<<32>>> Loss: 0.20908535290975125 | LR: 9e-06 | Duration: 0:02:53.291828
+map:57.670
+map_50:87.083
+map_75:66.968
+map_small:35.178
+map_medium:61.551
+map_large:62.349
+mar_1:7.087
+mar_10:50.820
+mar_100:65.791
+mar_small:49.216
+mar_medium:69.675
+mar_large:69.912
+map_per_class:-100.000
+mar_100_per_class:-100.000
+<<<33>>> Loss: 0.20798776741605252 | LR: 9e-06 | Duration: 0:02:53.952198
+<<<34>>> Loss: 0.20855628886725752 | LR: 9e-06 | Duration: 0:02:54.911779
+map:57.799
+map_50:87.461
+map_75:66.953
+map_small:34.842
+map_medium:61.575
+map_large:62.458
+mar_1:7.090
+mar_10:50.948
+mar_100:65.906
+mar_small:49.022
+mar_medium:69.826
+mar_large:69.937
+map_per_class:-100.000
+mar_100_per_class:-100.000
+<<<35>>> Loss: 0.20790152234956621 | LR: 9e-06 | Duration: 0:02:52.475533
+<<<36>>> Loss: 0.2083867968688719 | LR: 9e-06 | Duration: 0:02:51.971318
+map:57.733
+map_50:87.112
+map_75:67.216
+map_small:35.085
+map_medium:61.447
+map_large:62.425
+mar_1:7.073
+mar_10:50.891
+mar_100:65.787
+mar_small:49.132
+mar_medium:69.643
+mar_large:69.927
+map_per_class:-100.000
+mar_100_per_class:-100.000
+<<<37>>> Loss: 0.2080182854132727 | LR: 9e-06 | Duration: 0:02:54.081928
+<<<38>>> Loss: 0.20841566812014206 | LR: 9e-06 | Duration: 0:02:53.244796
+map:57.699
+map_50:87.099
+map_75:67.230
+map_small:34.914
+map_medium:61.430
+map_large:62.668
+mar_1:7.097
+mar_10:50.888
+mar_100:65.826
+mar_small:49.115
+mar_medium:69.662
+mar_large:70.088
+map_per_class:-100.000
+mar_100_per_class:-100.000
+<<<39>>> Loss: 0.20901685109827667 | LR: 9e-06 | Duration: 0:02:53.746795
+Best Model Saved
+Saved: checkpoint_40.pt
+<<<40>>> Loss: 0.20830715338233857 | LR: 9.000000000000001e-07 | Duration: 0:02:53.379305
+map:57.701
+map_50:87.125
+map_75:67.201
+map_small:35.196
+map_medium:61.344
+map_large:62.579
+mar_1:7.092
+mar_10:50.863
+mar_100:65.842
+mar_small:49.302
+mar_medium:69.630
+mar_large:70.072
+map_per_class:-100.000
+mar_100_per_class:-100.000
+Model Finished Training: 2:02:51.248259

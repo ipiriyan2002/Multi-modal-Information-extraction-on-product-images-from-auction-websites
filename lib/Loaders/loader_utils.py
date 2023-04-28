@@ -1,9 +1,11 @@
 #Import torch packages
 import torch
+import torchvision
 #Import other packages
 import numpy as np
 import xml.etree.ElementTree as ET
 import os
+import random
 
 def normaliseToTarget(box, og_size, target_size):
         """
@@ -31,8 +33,9 @@ def normaliseToTarget(box, og_size, target_size):
     
 
 def isBox(box):
-    return ((box[3]-box[1]) > 0) and ((box[2]-box[0]) > 0)
-
+    hasArea = ((box[3]-box[1]) * (box[2]-box[0])) > 0
+    hasHW = ((box[3]-box[1]) > 0) and ((box[2]-box[0]) > 0)
+    return hasArea and hasHW
 
 def packTargets(gt_bboxes, gt_classes):
     
@@ -114,3 +117,63 @@ def pairXmlList(img_path, ann_path):
             pairs.append((image_name, ann_name))
         
         return pairs
+
+
+class DataTransformer(object):
+    
+    available_transforms = [
+        'totensor', 'horizontalflip', 'verticalflip'
+    ]
+    
+    
+    def __init__(self, transforms, prob=0.5):
+        
+        for transform in transforms:
+            assert (transform.lower() in DataTransformer.available_transforms), f"{transform} not currently available"
+            
+        self.transforms = transforms
+        self.prob = prob
+    
+    def toTensor(self, image, target):
+        if isinstance(image, torch.Tensor):
+            return image, target
+        return torchvision.transforms.functional.to_tensor(image), target
+    
+    def horizontalFlip(self, image, target):
+        if random.random() < self.prob:
+            image_width = image.shape[-1]
+            image = image.flip(-1)
+            
+            if target != None:
+                target['boxes'][...,[0,2]] = image_width - target['boxes'][...,[2,0]]
+            
+        return image, target
+    
+    def verticalFlip(self, image, target):
+        if random.random() < self.prob:
+            image_height = image.shape[-2]
+            image = image.flip(-2)
+            
+            if target != None:
+                target['boxes'][...,[1,3]] = image_height - target['boxes'][...,[3,1]]
+        return image, target
+    
+    def applyTransform(self, image, target, transform):
+        
+        if transform.lower() == 'totensor':
+            return self.toTensor(image, target)
+        elif transform.lower() == 'horizontalflip':
+            return self.horizontalFlip(image, target)
+        elif transform.lower() == 'verticalflip':
+            return self.verticalFlip(image, target)
+       
+        return image, target
+    
+    
+    def __call__(self, image, target):
+        
+        for transform in self.transforms:
+            image, target = self.applyTransform(image, target, transform)
+        
+        return image, target
+        

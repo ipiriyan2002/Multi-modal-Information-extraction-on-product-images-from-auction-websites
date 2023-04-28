@@ -20,10 +20,8 @@ class ROINetwork(torch.nn.Module):
                  spatial_scale,
                  pos_prop_iou_thresh = 0.7, 
                  neg_prop_iou_thresh = 0.3, 
-                 max_samples=256, 
-                 ratio_pos_neg=0.5,
-                 normalize_mean=(0.0,0.0,0.0,0.0),
-                 normalize_std =(0.1,0.1,0.2,0.2)
+                 max_samples=512, 
+                 ratio_pos_neg=0.25
                 ):
         
         super(ROINetwork, self).__init__()
@@ -33,24 +31,26 @@ class ROINetwork(torch.nn.Module):
         self.spatial_scale = spatial_scale
         #self.device = device if device != None else torch.device('cpu')
         self.backbone = backboneNetwork
+        #ROI
+        self.roi = torchvision.ops.RoIPool((self.roi_height, self.roi_width), self.spatial_scale)
+        
+        self.roiTrainGen = ROIProposalGenerator(num_classes, pos_prop_iou_thresh, neg_prop_iou_thresh, 
+                                                max_samples, ratio_pos_neg)
         #Classifier Model
         self.classifier, self.in_features = self.backbone.getClassifier()
+        
         #locations
         self.locations = torch.nn.Linear(self.in_features, self.num_classes * 4)
         #scores for the locations
         self.classes = torch.nn.Linear(self.in_features, self.num_classes)
         
-        #normalization
-        self.normalize_mean = torch.tensor(normalize_mean, dtype=torch.float32)
-        self.normalize_std = torch.tensor(normalize_std, dtype=torch.float32)
+        self.init_weights(self.locations, 0, 0.001)
+        self.init_weights(self.classes, 0, 0.01)
         
-        #ROI
-        self.roi = torchvision.ops.RoIPool((self.roi_height, self.roi_width), self.spatial_scale)
-        
-        self.roiTrainGen = ROIProposalGenerator(num_classes, pos_prop_iou_thresh, neg_prop_iou_thresh, 
-                                                max_samples, ratio_pos_neg,
-                                                normalize_mean, normalize_std)
-        
+    
+    def init_weights(self, layer, mean, std):
+        layer.weight.data.normal_(mean, std)
+        layer.bias.data.zero_()    
     
     def parseHead(self, input_):
         """
@@ -64,22 +64,23 @@ class ROINetwork(torch.nn.Module):
     
     def classification_loss(self, pred_classes, gt_classes):
         #gt_classes = gt_classes.type_as(pred_classes)
-        loss = torch.nn.functional.cross_entropy(pred_classes, gt_classes)
+        loss = torch.nn.functional.cross_entropy(pred_classes, gt_classes.view(-1))
         return loss
     
     def regression_loss(self, pred_boxes, gt_boxes, gt_classes):
         
-        gt_boxes = gt_boxes.type_as(pred_boxes)
-        gt_boxes = gt_boxes.view(-1,4)
-        pred_boxes = pred_boxes.view(-1,4)
+        batch_size = gt_classes.shape[0]
+        num_gt_proposals = gt_classes.shape[1]
+        
+        gt_boxes = gt_boxes.type_as(pred_boxes).reshape(-1, 4)
+        pred_boxes = pred_boxes.reshape(-1, 4)
+        
         #Get the bounding boxes for the correct label
+        #weights = torch.abs((gt_classes.view(-1) > 0).type(torch.int64)).view(batch_size*num_gt_proposals, -1, 1).type_as(gt_boxes)
+        pos = torch.nonzero((gt_classes.view(-1) > 0)).squeeze(1)
         
-        pos = (gt_classes >= 1).type(torch.int64) * 1
-        
-        weights = torch.abs(pos)
-        weights = weights.view(-1, 1).type_as(gt_boxes)
-        
-        loss = torch.nn.functional.smooth_l1_loss(pred_boxes * weights, gt_boxes * weights)
+        loss = torch.nn.functional.smooth_l1_loss(pred_boxes[pos], gt_boxes[pos], reduction='sum', beta=1/9)
+        loss = loss / gt_classes.numel()
         
         return loss
     
@@ -113,7 +114,7 @@ class ROINetwork(torch.nn.Module):
         
         return out_locs, out_scores
     
-    def forward(self, feat_maps, roi_proposals, gt_bboxes, gt_labels):
+    def forward(self, feat_maps, roi_proposals, targets=None):
         """
         B -> Batch
         C -> Channels
@@ -124,46 +125,51 @@ class ROINetwork(torch.nn.Module):
         Args:
             feat_maps (B,C,H,W): the features map output from backbone network
             roi_proposals (Tensor (B, N, 4) or List[Tensor (N,4)]): region of interests
-            gt_bboxes (B,L,4): ground truth bounding boxes
-            gt_labels (B,N,4): ground truth labels for each anchor
+            targets: ground truth targets
         """
-        batch_size = gt_bboxes.size(dim=0)
-        
-        roi_props, gt_classes, gt_offsets = self.roiTrainGen(roi_proposals, gt_bboxes, gt_labels)
-        
-        out_locs, out_scores = self.parse(feat_maps, roi_props)
-        
-        gt_classes = gt_classes.view(-1)
-        
-        pred_boxes_per_gt_label = torch.gather(out_locs.view(out_locs.size(dim=0), -1, 4), 1, 
-                                               gt_classes.view(gt_classes.size(dim=0), 1, 1).expand(gt_classes.size(dim=0), 1, 4))
-        pred_boxes_per_gt_label = pred_boxes_per_gt_label.squeeze(1)
         
         
-        locs_loss = self.regression_loss(pred_boxes_per_gt_label, gt_offsets, gt_classes)
-        scores_loss = self.classification_loss(out_scores, gt_classes)
+        if self.training:
+            batch_size = feat_maps.size(dim=0)
+            
+            gt_bboxes = [target['boxes'] for target in targets]
+            gt_labels = [target['labels'] for target in targets]
+            
+            roi_props, gt_classes, gt_offsets = self.roiTrainGen(roi_proposals, gt_bboxes, gt_labels)
+            
+            out_locs, out_scores = self.parse(feat_maps, roi_props)
         
-        scores_probs = torch.nn.functional.softmax(out_scores, 1)
+            
+            pred_boxes_per_gt_label = torch.gather(out_locs.view(out_locs.size(dim=0), -1, 4), 1, 
+                                               gt_classes.view(-1, 1, 1).expand(gt_classes.view(-1).size(dim=0), 1, 4))
+            pred_boxes_per_gt_label = pred_boxes_per_gt_label.squeeze(1)
         
-        scores_probs = scores_probs.view(batch_size, roi_props.size(dim=1), -1)
-        labels = torch.argmax(out_scores, 1).view(batch_size, -1)
+            locs_loss = self.regression_loss(pred_boxes_per_gt_label, gt_offsets, gt_classes)
+            scores_loss = self.classification_loss(out_scores, gt_classes)
         
-        scores_probs_gathered = torch.gather(scores_probs.view(-1, self.num_classes), 1, labels.view(-1,1)).squeeze(1)
+            scores_probs = torch.nn.functional.softmax(out_scores, 1)
         
-        roi_out = {
-            "boxes": pred_boxes_per_gt_label.view(batch_size, -1, 4),
-            "scores": scores_probs_gathered,
-            "labels": labels,
-            "rois": roi_props
-        }
+            scores_probs = scores_probs.view(batch_size, roi_props.size(dim=1), -1)
+            labels = torch.argmax(out_scores, 1).view(batch_size, -1)
         
-        roi_loss = {
-            "roi_bbox_loss": locs_loss,
-            "roi_cls_loss": scores_loss
-        }
+            scores_probs_gathered = torch.gather(scores_probs.view(-1, self.num_classes), 1, labels.view(-1,1)).squeeze(1)
+        
+            roi_out = {
+                "boxes": pred_boxes_per_gt_label.view(batch_size, -1, 4),
+                "scores": scores_probs_gathered.view(batch_size, -1),
+                "labels": labels,
+                "rois": roi_props
+            }
+            
+            roi_loss = {
+                "roi_box_loss": locs_loss,
+                "roi_cls_loss": scores_loss
+            }
         
         
-        return roi_loss, roi_out
+            return roi_loss, roi_out
+        else:
+            return self.inference(feat_maps, roi_proposals)
     
     
     def inference(self, feat_maps, roi_proposals):
@@ -173,7 +179,7 @@ class ROINetwork(torch.nn.Module):
             
             scores_probs = torch.nn.functional.softmax(out_scores, 1)
             
-            scores_probs = scores_probs.view(batch_size, roi_proposals.size(dim=1), -1)
+            scores_probs = scores_probs.view(batch_size, roi_proposals[0].size(dim=0), -1)
             labels = torch.argmax(out_scores, 1).view(batch_size, -1)
         
             scores_probs_gathered = torch.gather(scores_probs.view(-1, self.num_classes), 1, labels.view(-1,1)).squeeze(1).view(batch_size,-1)
@@ -186,14 +192,10 @@ class ROINetwork(torch.nn.Module):
             pred_boxes = pred_boxes.squeeze(1)
             pred_boxes = pred_boxes.view(batch_size, -1, 4)
             
-            #normalize predictions
-            pred_boxes = pred_boxes * self.normalize_std.type_as(pred_boxes).expand_as(pred_boxes)
-            pred_boxes = pred_boxes + self.normalize_mean.type_as(pred_boxes).expand_as(pred_boxes)
-            
             roi_out = {
                 "boxes": pred_boxes,
                 "scores": scores_probs_gathered,
-                "labels": labels
+                "labels": labels.view(batch_size, -1)
             }
             
         return roi_out

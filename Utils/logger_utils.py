@@ -32,11 +32,10 @@ class TrainingLogger:
         self.current_epoch = 0
         self.current_loss = 1e6
         self.loss_dict = {}
-        self.prev_loss_dict = {}
-        self.prev_loss = 1e6 
         
         self.eval_metrics = {"map": -1}
-        self.prev_map = -1
+        
+        self.best_map = -1
         
         self.duration = 0
         #self.init_print_settings()
@@ -56,7 +55,7 @@ class TrainingLogger:
         print(f"|>>>EPOCHS: {self.total_epochs}\n",flush=True)
         print(f"|>>>INITIAL LEARNING RATE: {self.lr}\n",flush=True)
         print("|>>>BATCH: {0} | VALIDATION BATCH: {1}\n".format(self.settings.get("BATCH"), self.settings.get("VAL_BATCH")),flush=True)
-        print("|>>>IMAGE SIZE: {0}x{1}x{2}\n".format(self.settings.get("IMG_HEIGHT"), self.settings.get("IMG_WIDTH"), self.settings.get("CHANNELS")),flush=True)
+        print("|>>>MIN IMAGE SIZE: {0} | MAX IMAGE SIZE: {1}\n".format(self.settings.get("MIN_SIZE"), self.settings.get("MAX_SIZE")),flush=True)
         print("|>>>SEPERATE TRAINING: {0}\n".format(self.settings.get("SEPERATE_TRAIN")), flush=True)
         print(f"{pp_}========{pp_}",flush=True)
     
@@ -109,7 +108,8 @@ class TrainingLogger:
         Save / log model data
         """
         #Save best model
-        if self.current_loss <= self.prev_loss and self.eval_metrics['map'] > self.prev_map:
+        if self.eval_metrics['map'] > self.best_map:
+            self.best_map = self.eval_metrics['map']
             self.bestSave(model, optimizer)
         
         #Save at interval
@@ -136,7 +136,7 @@ class TrainingLogger:
         
         if len(self.loss_dict) > 0:
             printLosses = [f"{k}:{v}" for k,v in self.loss_dict.items()]
-            print("\n<<<{0}>>> {1}".format(self.current_epoch, " | ".join(printLosses)), flush=True)
+            print("<<<{0}>>> {1}".format(self.current_epoch, " | ".join(printLosses)), flush=True)
         
         self.summarizeMetrics()
         
@@ -144,12 +144,9 @@ class TrainingLogger:
         """
         Update values per epoch
         """
-        self.prev_loss = self.current_loss
         self.current_loss = losses
-        self.prev_loss_dict = self.loss_dict
         self.loss_dict = losses_dict
         self.current_epoch = epoch
-        self.prev_map = self.eval_metrics['map']
         self.eval_metrics = eval_metric
         self.lr = optimizer.param_groups[0]['lr']
         self.duration = duration

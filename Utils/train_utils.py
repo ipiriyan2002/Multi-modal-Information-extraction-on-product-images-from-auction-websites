@@ -13,7 +13,7 @@ from Utils.logger_utils import TrainingLogger
 import os, io, time, datetime
 import numpy as np
 
-def getDataLoader(device, settings, split="train"):
+def getDataLoader(device, settings, split="train", collate=None):
     start_ = time.time()
     
     #Get dataset
@@ -22,7 +22,7 @@ def getDataLoader(device, settings, split="train"):
     loader = DataLoader(
         dataset.getDataset(), batch_size=settings.get("BATCH"),
         shuffle=(split=="train"), pin_memory=True,
-        num_workers=settings.get("NUM_WORKERS")
+        num_workers=settings.get("NUM_WORKERS"), collate_fn=collate
     )
     duration = time.time() - start_
         
@@ -31,7 +31,7 @@ def getDataLoader(device, settings, split="train"):
         
     return loader
 
-def train_epoch(model, optimizer, train_loader, device):
+def train_epoch(model, optimizer, train_loader, device, debug=False):
     #Set to train
     model.train()
     
@@ -39,9 +39,9 @@ def train_epoch(model, optimizer, train_loader, device):
         
     losses = {
         "rpn_cls_loss": 0,
-        "rpn_bbox_loss": 0,
+        "rpn_box_loss": 0,
         "roi_cls_loss": 0,
-        "roi_bbox_loss": 0
+        "roi_box_loss": 0
     }
     
     total_loss = 0
@@ -52,8 +52,8 @@ def train_epoch(model, optimizer, train_loader, device):
     for images, targets in train_loader:
         optimizer.zero_grad()
         batch_no += 1
-        images = images.to(device)
-        targets = {k:v.to(device) for k,v in targets.items()}
+        images = [img.to(device) for img in images]
+        targets = [{k:v.to(device) for k,v in target.items()} for target in targets]
             
         with torch.cuda.amp.autocast():
             out_losses, _ = model(images, targets)
@@ -62,7 +62,9 @@ def train_epoch(model, optimizer, train_loader, device):
             
         for loss_key, loss in out_losses.items():
             losses[loss_key] += float(loss)
-            
+        
+        if debug:
+            print(losses)
             
         scalar.scale(sum_loss).backward()
         scalar.step(optimizer)
@@ -76,14 +78,14 @@ def train_epoch(model, optimizer, train_loader, device):
         
     return total_loss, losses, duration
 
-def evalEpoch(epoch, model, val_loader, device):
+def evalEpoch(epoch, model, val_loader, settings, device, custom=True):
     eval_metrics = {"map":-1}
-    if epoch % self.settings.get("VAL_EPOCH") == 0:
+    if epoch % settings.get("VAL_EPOCH") == 0:
         eval_start = time.time()
-        eval_metrics = evaluate(model,val_loader,custom=True,device=device)
+        eval_metrics = evaluate(model,val_loader,custom=custom,device=device)
         eval_duration = time.time() - eval_start
             
-    print(f"Evaluated in: {str(datetime.timedelta(seconds = eval_duration))}", flush=True)
+        print(f"Evaluated in: {str(datetime.timedelta(seconds = eval_duration))}", flush=True)
 
     return eval_metrics
     

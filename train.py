@@ -33,10 +33,17 @@ def setupDDP(rank, worldsize, port_socket):
     
     init_process_group(backend="nccl", rank=rank, world_size=worldsize)
 
+def collate(batch):
+    return list(zip(*batch))
+
 def main(rank, settings, world_size, resume_path):
     settings = ConfigLoader(settings)
     resume_point = 0
     prev_min_loss = 1e15
+    
+    #Defining training and validation loader
+    train_loader = getDataLoader(rank, settings, split="train",collate=collate)
+    val_loader = getDataLoader(rank, settings, split="validation",collate=collate)
     
     #Defining model
     model = FRCNNDetector(settings)
@@ -68,7 +75,7 @@ def main(rank, settings, world_size, resume_path):
             model, device_ids=[rank], find_unused_parameters=True
         )
     
-    if resume == "":
+    if resume_path != "":
         resume_dict = torch.load(resume_path)
         resume_point = resume_dict["epoch"]
         prev_min_loss = resume_dict["loss"]
@@ -76,25 +83,21 @@ def main(rank, settings, world_size, resume_path):
         optimizer.load_state_dict(resume_dict['optimizer_dict'])
     
     logger = TrainingLogger(settings, world_size)
-    if device == 0:
+    if rank == 0:
         logger.init_print_settings()
-    
-    #Defining training and validation loader
-    train_loader = getDataLoader(rank, settings, split="train")
-    val_loader = getDataLoader(rank, settings, split="validation")
     
     
     start_ = time.time()
     
     
     for epoch in range(resume_point, settings.get("EPOCHS")):
-        total_losses, losses, duration = train_epoch(model, optimizer, train_loader, rank)
+        total_loss, losses, duration = train_epoch(model, optimizer, train_loader, rank)
         
         scheduler.step()
         
-        eval_metrics = evalEpoch(epoch+1, model, val_loader, rank)
+        eval_metrics = evalEpoch(epoch+1, model, val_loader,settings, rank)
         
-        if device == 0:
+        if rank  == 0:
             logger.update(total_loss, epoch+1, duration, model, optimizer, eval_metrics, losses)
             logger.summarize()
 

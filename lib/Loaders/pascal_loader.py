@@ -30,7 +30,7 @@ def getClassDicts():
 
 class VOCDetDataset(tu.data.Dataset):
     
-    def __init__(self, img_path, ann_path, cls_dict, target_size, pad=True):
+    def __init__(self, img_path, ann_path, class_type='all', pad=False,transform=None):
         """
         Arguments:
             img_path (string) : path to images
@@ -40,11 +40,19 @@ class VOCDetDataset(tu.data.Dataset):
         """
         self.img_path = img_path 
         self.ann_path = ann_path
-        self.target_height, self.target_width, self.target_depth = target_size
         
-        self.cls_dict = cls_dict 
+        self.cls_dict, _ = getClassDicts() 
         self.pad = pad
+        self.transform = transform
+        
+        self.mean = torch.tensor([0.0,0.0,0.0])
+        self.std = torch.tensor([0.0,0.0,0.0])
+        self.pixel_count = 0
+        
         self.gt_imgs, self.gt_targets = self.getDataset()
+        
+        self.mean = self.mean / self.pixel_count
+        self.std = torch.sqrt((self.std / self.pixel_count) - (self.mean ** 2))
     
     def __len__(self):
         """
@@ -61,6 +69,9 @@ class VOCDetDataset(tu.data.Dataset):
             imgs : image array
             targets : target dictionary
         """
+        if self.transform != None:
+            return self.transform(self.gt_imgs[idx], self.gt_targets[idx])
+        
         return self.gt_imgs[idx], self.gt_targets[idx]
     
     
@@ -81,15 +92,22 @@ class VOCDetDataset(tu.data.Dataset):
         for img_path, ann_path in pairs:
             #Image processing
             img = Image.open(img_path)
-            img = img.resize((self.target_height, self.target_width))
+            #img = img.resize((self.target_height, self.target_width))
             img_arr = np.asarray(img, dtype='float32') / 255.0
             img_arr = img_arr.transpose(-1,0,1)
-            gt_imgs.append(torch.from_numpy(img_arr))
+            img_arr = torch.from_numpy(img_arr)
+            
+            
+            #Adding the pixel counts to calculate mean and std for dataset
+            self.mean += img_arr.sum(axis=[1,2])
+            self.std += (img_arr ** 2).sum(axis=[1,2])
+            
+            self.pixel_count += img_arr.shape[1] * img_arr.shape[2]
             
             #label processing
             annDict = lu.read_voc_xml(ann_path)
             #Get the original shape
-            og_height, og_width, og_depth = annDict['size']
+            #og_height, og_width, og_depth = annDict['size']
             #Get all objects
             objs = annDict['objects']
             
@@ -99,15 +117,17 @@ class VOCDetDataset(tu.data.Dataset):
             for obj in objs:
                 
                 bbox = obj['bbox']
-                norm_box = lu.normaliseToTarget(bbox, (og_height, og_width), (self.target_heigth, self.target_width))
-                if lu.isBox(norm_box):
-                    bboxes.append(norm_box)
+                if lu.isBox(bbox):
+                    #norm_box = lu.normaliseToTarget(bbox, (og_height, og_width), (self.target_height, self.target_width))
+                    bboxes.append(bbox)
                     classes.append(self.cls_dict[obj['class']])
             
-            
-            #Append tensor form of boxes and classes
-            gt_bboxes.append(torch.as_tensor(bboxes, dtype=torch.float32))
-            gt_classes.append(torch.as_tensor(classes, dtype=torch.int64))
+            #Only get images with atleast 1 gt box
+            if len(bboxes) > 0:
+                gt_imgs.append(img_arr)
+                #Append tensor form of boxes and classes
+                gt_bboxes.append(torch.as_tensor(bboxes, dtype=torch.float32))
+                gt_classes.append(torch.as_tensor(classes, dtype=torch.int64))
         
         #Padding the bboxes and classes with the value of -1 which is the numerical value for ignore
         if self.pad:

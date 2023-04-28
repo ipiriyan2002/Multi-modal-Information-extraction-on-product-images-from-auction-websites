@@ -1,0 +1,36 @@
+#Dataset and split
+DATASET: cordv2
+SPLIT: train
+NUM_CLASSES: 2
+
+MIN_SIZE: 400
+MAX_SIZE: 800
+TRANSFORMS: [totensor, horizontalflip, verticalflip]
+
+#Epoch and Batch
+BATCH: 1
+VAL_BATCH: 1
+EPOCHS: 30
+VAL_EPOCH: 1
+SAVE_ENTRY: 55
+LOG_ENTRY: 1
+
+#Optimizer
+L_RATE: 0.001
+
+#Scheduler
+STEP_SIZE: 10
+GAMMA: 0.1
+
+
+#Save paths
+SAVE_PATH_CHECKPOINT: ./Saved_Models/custom_cordv2_E30_B1/
+SAVE_PATH_BEST: ./Saved_Models/custom_cordv2_E30_B1/Best_Model/
+
+#Anchor and proposal generation
+ANCHOR_SCALES: [8,16,32]
+
+#Train
+NUM_WORKERS: 0
+PAD: True
+DDP: True

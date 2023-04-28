@@ -8,9 +8,13 @@ PRETRAINED_PATH: data/pretrained/vgg16/vgg16-397923af.pth
 PAD: False
 
 #Image setting
-IMG_WIDTH: 256
-IMG_HEIGHT: 256
+MIN_SIZE: 600
+MAX_SIZE: 1000
 CHANNELS: 3
+TRANSFORMS: [totensor]
+#Random Mean and std for image. If dataloader defined before model, mean and std would be calculated for dataset
+IMAGE_MEAN: [0.45,0.45,0.45]
+IMAGE_STD: [0.23, 0.23,0.23]
 
 #Epochs and batches
 EPOCHS: 20
@@ -32,7 +36,7 @@ GAMMA: 0.1
 
 #RPN WEIGHTS
 CONF_LOSS_WEIGHT: 1
-BBOX_LOSS_WEIGHT: 10
+BBOX_LOSS_WEIGHT: 1
 
 #Base Save Dir
 SAVE_DIR: checkpoints
@@ -46,20 +50,35 @@ ANCHOR_SCALES: [8,16,32]
 ANCHOR_RATIOS: [0.5,1,2]
 STRIDE: 16 #Stride for VGG16 model
 RPN_MAX_SAMPLES: 256
+RPN_CONF_THRESH: 0.0
+RPN_NMS_THRESH: 0.7
 
 #ROI Network
 ROI_HEIGHT: 7
 ROI_WIDTH: 7
-ROI_MAX_SAMPLES: 256
-ROI_RATIO: 0.5
-NORMALIZE_MEAN: [0.0,0.0,0.0,0.0]
-NORMALIZE_STD: [0.1,0.1,0.2,0.2]
+ROI_MAX_SAMPLES: 512
+ROI_RATIO: 0.25
 POS_PROP_THRESH: 0.5
 NEG_PROP_THRESH: [0.5,0.1] #Neg prop thresh is a two element list with first element as high thresh and the other as low thresh
+ROI_CONF_THRESH: 0.5
+ROI_NMS_THRESH: 0.7
 
 #Train
 SEPERATE_TRAIN: False
-NUM_WORKERS: 2
+NUM_WORKERS: 0
 SAVE_PATH_CHECKPOINT: ./Saved_Models/Temp/
 SAVE_PATH_BEST: ./Saved_Models/Temp/Best_Model/
 DDP: True
+TRAIN_RPN_PRE_NMS_K: 12000
+TRAIN_RPN_POST_NMS_K: 2000
+
+#TEST
+TEST_RPN_PRE_NMS_K: 6000
+TEST_RPN_POST_NMS_K: 300
+TEST_POST_K: 200
+
+#CORD
+CLASS_TYPE: price #[text, main, price, all] for cord
+
+#VOC
+CLASS_TYPE: all 
