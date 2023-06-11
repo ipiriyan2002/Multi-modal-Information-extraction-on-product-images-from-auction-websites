@@ -1,9 +1,10 @@
 import torch
-import torchvision
 import torchvision.ops as ops
-import numpy as np
 import torch.nn as nn
 
+#Custom Packages
+from lib.Model.common_utils.proposal_matcher import ProposalMatcher
+from lib.Model.common_utils.sample_matcher import SampleMatcher
 
 class ROIProposalGenerator(nn.Module):
     """
@@ -14,57 +15,19 @@ class ROIProposalGenerator(nn.Module):
                  pos_iou_thresh = 0.7, 
                  neg_iou_thresh = 0.3, 
                  max_samples=256, 
-                 ratio_pos_neg=0.25):
+                 ratio_pos_neg=0.25,
+                 weights=(10.0,10.0,5.0,5.0)
+                ):
         
         super(ROIProposalGenerator, self).__init__()
         
         self.num_classes = num_classes
-        self.pos_iou_thresh = pos_iou_thresh
-        self.neg_iou_thresh = neg_iou_thresh
+        self.weights = weights
         self.max_samples = max_samples
-        self.ratio_pos_neg = ratio_pos_neg
-    
-    
-    def subsample(self, pos_indexes, neg_indexes):
-        """
-        Given positive indexes and negative indexes subsample such that the number of positive and negative, in total, equals max samples
-        Returns the indexes to keep
-        """
-        
-        max_pos_samples = int(self.max_samples * self.ratio_pos_neg)
-        
-        num_pos = min(pos_indexes.numel(), max_pos_samples)
-        
-        max_neg_samples = self.max_samples - num_pos
-        
-        num_neg = min(neg_indexes.numel(), max_neg_samples)
-        
-        if num_pos > 0 and num_neg > 0:
-            
-            pos_rand_keep = torch.randperm(pos_indexes.numel(), device=pos_indexes.device)[:num_pos]
-        
-            neg_rand_keep = torch.randperm(neg_indexes.numel(), device=neg_indexes.device)[:num_neg]
-            
-            
-            pos_samples = pos_indexes[pos_rand_keep]
-            neg_samples = neg_indexes[neg_rand_keep]
-            
-            keep = torch.cat([pos_samples, neg_samples])
-        elif num_pos > 0 and num_neg == 0:
-            pos_rand_keep = torch.randperm(pos_indexes.numel(), device=pos_indexes.device)[:num_pos]
-            
-            keep = pos_indexes[pos_rand_keep]
-            
-        elif num_neg > 0 and num_pos == 0:
-            neg_rand_keep = torch.randperm(neg_indexes.numel(), device=neg_indexes.device)[:num_neg]
-            
-            keep = neg_indexes[neg_rand_keep]
-        else:
-            raise ValueError("Cannot have no positive and negative boxes")
-        
-        return keep, num_pos
-        
-    
+        self.proposal_matcher = ProposalMatcher(pos_iou_thresh, neg_iou_thresh, class_agnostic=False,for_rpn=False)
+        self.sample_matcher = SampleMatcher(max_samples, ratio_pos_neg, keep_inds=True)
+
+
     def forward(self, all_proposals, all_gt_bboxes, all_gt_orig_classes):
         """
         Given proposals, ground truth bounding boxes and classes,
@@ -85,61 +48,38 @@ class ROIProposalGenerator(nn.Module):
             proposals = proposals.type_as(gt_bboxes)
 
             #Adding the ground truth to the proposals
-            proposals = torch.cat((proposals,gt_bboxes), dim=0)
+            proposals = torch.cat((proposals,gt_bboxes))
 
-            #Compute the iou matrix
-            iou_matrix = ops.box_iou(proposals, gt_bboxes)
-
-            #Max iou ground truth box per proposal
-            max_ious, max_ious_indexes = torch.max(iou_matrix, 1)
-
-            #Define storage for labels and ground truth roi for each batch
+            #Using proposal matcher to generate training proposals for labels and indexes used for bounding boxes
+            target_classes, indexes = self.proposal_matcher(proposals, gt_bboxes, gt_classes)
 
             #Gather all ground truth boxes into a tensor of shape (number of proposals)
-            gt_bbox_pos = max_ious_indexes.reshape(-1, 1,1)
-            gt_bbox_pos = gt_bbox_pos.repeat(1,1,4)
-            
-            target_bboxes = gt_bboxes.view(1, -1,4)
-            target_bboxes = target_bboxes.expand(max_ious_indexes.size(-1), -1, 4)
-            target_bboxes = torch.gather(target_bboxes, 1, gt_bbox_pos)
-            target_bboxes = target_bboxes.view(-1, 4)
-
-            #Gather all classes into a tensor of shape (batch_size, number of proposals)
-            gt_classes_pos = max_ious_indexes.reshape(-1, 1)
-            target_classes = gt_classes.view(1,-1)
-            target_classes = target_classes.expand(max_ious_indexes.size(-1),-1)
-            target_classes = torch.gather(target_classes, 1, gt_classes_pos)
-            target_classes = target_classes.view(-1)
-
+            target_bboxes = gt_bboxes[indexes]
 
             #Get the positive indexes as in the foreground boxes
-            pos_indexes_positions = max_ious >= self.pos_iou_thresh
-            pos_indexes = torch.nonzero(pos_indexes_positions).squeeze(1)
-            #Get the negative indexes as in the background boxes (using minimum thresh of 0.1 such that background images are chosen atleast)
-            neg_indexes_positions = torch.logical_and(max_ious < self.neg_iou_thresh[0], max_ious >= self.neg_iou_thresh[1])
-            neg_indexes = torch.nonzero(neg_indexes_positions).squeeze(1)
-
+            pos_indexes = torch.nonzero(target_classes > 0).squeeze(1)
+            #Get the negative indexes as in the background boxes
+            neg_indexes = torch.nonzero(target_classes == 0).squeeze(1)
 
             #Subsample and gather the training data
-            for batch in range(batch_size):
-                keep_index, num_pos_targets = self.subsample(pos_indexes, neg_indexes)
+            keep, num_pos, _ = self.sample_matcher(pos_indexes, neg_indexes)
 
-                #Get labels
-                gt_labels[index, :keep_index.size(0)] = target_classes[keep_index.view(-1)]
-                gt_labels[index, num_pos_targets:] = 0
-                #Get proposals
-                rois[index, :keep_index.size(0), :] = proposals[keep_index.view(-1), :]
-                #Get ground truth boxes
-                gt_boxes_per_rois[index, :keep_index.size(0), :] = target_bboxes[keep_index.view(-1), :]
+            #Get labels
+            gt_labels[index, :keep.size(0)] = target_classes[keep]
+            gt_labels[index, num_pos:] = 0
+            #Get proposals
+            rois[index, :keep.size(0), :] = proposals[keep, :]
+            #Get ground truth boxes
+            gt_boxes_per_rois[index, :keep.size(0), :] = target_bboxes[keep, :]
 
         #Generate the offsets
         rois = ops.box_convert(rois, in_fmt='xyxy', out_fmt='cxcywh')
         gt_boxes_per_rois = ops.box_convert(gt_boxes_per_rois, in_fmt='xyxy', out_fmt='cxcywh')
 
-        tx = (gt_boxes_per_rois[...,0] - rois[...,0]) / rois[...,2]
-        ty = (gt_boxes_per_rois[...,1] - rois[...,1]) / rois[...,3]
-        tw = torch.log(gt_boxes_per_rois[...,2] / rois[...,2])
-        th = torch.log(gt_boxes_per_rois[...,3] / rois[...,3])
+        tx = self.weights[0] * (gt_boxes_per_rois[...,0] - rois[...,0]) / rois[...,2]
+        ty = self.weights[1] * (gt_boxes_per_rois[...,1] - rois[...,1]) / rois[...,3]
+        tw = self.weights[2] * torch.log(gt_boxes_per_rois[...,2] / rois[...,2])
+        th = self.weights[3] * torch.log(gt_boxes_per_rois[...,3] / rois[...,3])
 
         #Gather the offsets
         gt_offsets = torch.stack([tx,ty,tw,th],dim=2).type_as(rois)

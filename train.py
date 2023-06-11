@@ -95,9 +95,9 @@ def main(rank, settings, world_size, resume_path):
         
         scheduler.step()
         
-        eval_metrics = evalEpoch(epoch+1, model, val_loader,settings, rank)
+        eval_metrics = evalEpoch(epoch+1, model, val_loader,settings, rank, custom=True)
         
-        if rank  == 0:
+        if rank == 0:
             logger.update(total_loss, epoch+1, duration, model, optimizer, eval_metrics, losses)
             logger.summarize()
 

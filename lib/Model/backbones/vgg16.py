@@ -7,14 +7,11 @@ class VGG16_BACKBONE():
     VGG16 backbone network and also their classifier
     """
     def __init__(self, pretrained=False, pretrained_path="data/pretrained/vgg16/vgg16-397923af.pth"):
-        super(VGG16_BACKBONE, self).__init__()
-        #self.device = device if device != None else torch.device('cpu')
         
         self.pretrained = pretrained
         self.pretrained_path = pretrained_path
         self.loaded = False
         self.vgg16 = torchvision.models.vgg16()
-        self.backbone_out_channels = 512
     
     def loadWeights(self):
         if self.pretrained and not(self.loaded):
@@ -32,7 +29,6 @@ class VGG16_BACKBONE():
         """
         self.loadWeights()
         bbNet = nn.Sequential(*list(self.vgg16.features)[:-1])
-        self.backbone_out_channels = bbNet[-2].out_channels
         for layer in range(10):
             for param in bbNet[layer].parameters():
                 param.requires_grad = False
@@ -42,8 +38,13 @@ class VGG16_BACKBONE():
     def getClassifier(self):
         
         self.loadWeights()
-        
-        classifier = nn.Sequential(*list(self.vgg16.classifier)[:-1])
+
+        classifier_list = list(self.vgg16.classifier)
+
+        #Not using last layer
+        del classifier_list[6]
+
+        classifier = nn.Sequential(*classifier_list)
         out_channels = 4096
         
         return classifier, out_channels
@@ -53,4 +54,7 @@ class VGG16_BACKBONE():
     
     def getOutChannels(self):
         #second last layer as the last layer is a ReLU layer
-        return self.backbone_out_channels
+        return 512
+
+    def getFeatScaler(self):
+        return 16

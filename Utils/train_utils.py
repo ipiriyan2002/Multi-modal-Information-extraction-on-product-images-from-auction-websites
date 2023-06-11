@@ -56,7 +56,7 @@ def train_epoch(model, optimizer, train_loader, device, debug=False):
         targets = [{k:v.to(device) for k,v in target.items()} for target in targets]
             
         with torch.cuda.amp.autocast():
-            out_losses, _ = model(images, targets)
+            out_losses, out_preds = model(images, targets)
                 
             sum_loss = sum(loss for loss in out_losses.values())
             
@@ -64,7 +64,14 @@ def train_epoch(model, optimizer, train_loader, device, debug=False):
             losses[loss_key] += float(loss)
         
         if debug:
-            print(losses)
+            #print(losses)
+            if float(sum_loss) > 10.0:
+                print("="*50)
+                print(losses)
+                print(batch_no)
+                print(targets)
+                print(out_preds)
+                print("="*50)
             
         scalar.scale(sum_loss).backward()
         scalar.step(optimizer)
@@ -78,11 +85,11 @@ def train_epoch(model, optimizer, train_loader, device, debug=False):
         
     return total_loss, losses, duration
 
-def evalEpoch(epoch, model, val_loader, settings, device, custom=True):
+def evalEpoch(epoch, model, val_loader, settings, device, custom=True, debug=False):
     eval_metrics = {"map":-1}
     if epoch % settings.get("VAL_EPOCH") == 0:
         eval_start = time.time()
-        eval_metrics = evaluate(model,val_loader,custom=custom,device=device)
+        eval_metrics = evaluate(model,val_loader,custom=custom,device=device, debug=debug)
         eval_duration = time.time() - eval_start
             
         print(f"Evaluated in: {str(datetime.timedelta(seconds = eval_duration))}", flush=True)

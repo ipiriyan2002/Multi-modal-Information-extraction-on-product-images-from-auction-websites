@@ -39,10 +39,7 @@ class TrainingLogger:
         
         self.duration = 0
         #self.init_print_settings()
-        
-        
-        with open(self.settings_save_path, 'w') as f:
-            _ = yaml.dump(self.settings.getDict(), f)
+
     
     def init_print_settings(self):
         """
@@ -101,7 +98,7 @@ class TrainingLogger:
         """
         with open(self.log_path, "a") as f:
             map_value = self.eval_metrics["map"]
-            f.write(f"{self.current_epoch}-{self.current_loss}-{map_value}\n")
+            f.write(f"{self.current_epoch}={self.current_loss}={map_value}\n")
         
     def save(self, model, optimizer):
         """
@@ -111,10 +108,12 @@ class TrainingLogger:
         if self.eval_metrics['map'] > self.best_map:
             self.best_map = self.eval_metrics['map']
             self.bestSave(model, optimizer)
+            self.settings.writeFinalConfig(self.settings_save_path)
         
         #Save at interval
         if self.current_epoch % self.save_entry == 0 or self.current_epoch == self.total_epochs:
             self.intervalSave(model, optimizer)
+            self.settings.writeFinalConfig(self.settings_save_path)
         
         #Save log
         if self.current_epoch % self.log_entry == 0:

@@ -16,18 +16,14 @@ def normaliseToTarget(box, og_size, target_size):
         
         height, width = og_size
         target_height, target_width = target_size
-        
-        #Normalise from original size
-        box[0] /= width
-        box[1] /= height
-        box[2] /= width
-        box[3] /= height
+
+        width_ratio, height_ratio = target_width/width, target_height/height
         
         #Unnormalise to target_size
-        box[0] *= target_width
-        box[1] *= target_height
-        box[2] *= target_width
-        box[3] *= target_height
+        box[0] *= width_ratio
+        box[1] *= height_ratio
+        box[2] *= width_ratio
+        box[3] *= height_ratio
         
         return box
     

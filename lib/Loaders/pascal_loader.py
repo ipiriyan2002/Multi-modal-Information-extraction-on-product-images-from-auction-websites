@@ -45,14 +45,16 @@ class VOCDetDataset(tu.data.Dataset):
         self.pad = pad
         self.transform = transform
         
-        self.mean = torch.tensor([0.0,0.0,0.0])
-        self.std = torch.tensor([0.0,0.0,0.0])
-        self.pixel_count = 0
-        
+        #self.mean = torch.tensor([0.0,0.0,0.0])
+        #self.std = torch.tensor([0.0,0.0,0.0])
+        #self.pixel_count = 0
+
+        self.num_classes = len(self.cls_dict.keys())
+
         self.gt_imgs, self.gt_targets = self.getDataset()
         
-        self.mean = self.mean / self.pixel_count
-        self.std = torch.sqrt((self.std / self.pixel_count) - (self.mean ** 2))
+        #self.mean = self.mean / self.pixel_count
+        #self.std = torch.sqrt((self.std / self.pixel_count) - (self.mean ** 2))
     
     def __len__(self):
         """
@@ -99,10 +101,10 @@ class VOCDetDataset(tu.data.Dataset):
             
             
             #Adding the pixel counts to calculate mean and std for dataset
-            self.mean += img_arr.sum(axis=[1,2])
-            self.std += (img_arr ** 2).sum(axis=[1,2])
+            #self.mean += img_arr.sum(axis=[1,2])
+            #self.std += (img_arr ** 2).sum(axis=[1,2])
             
-            self.pixel_count += img_arr.shape[1] * img_arr.shape[2]
+            #self.pixel_count += img_arr.shape[1] * img_arr.shape[2]
             
             #label processing
             annDict = lu.read_voc_xml(ann_path)

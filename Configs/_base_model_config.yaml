@@ -13,8 +13,8 @@ MAX_SIZE: 1000
 CHANNELS: 3
 TRANSFORMS: [totensor]
 #Random Mean and std for image. If dataloader defined before model, mean and std would be calculated for dataset
-IMAGE_MEAN: [0.45,0.45,0.45]
-IMAGE_STD: [0.23, 0.23,0.23]
+IMAGE_MEAN: [0.485, 0.456, 0.406]
+IMAGE_STD: [0.229, 0.224, 0.225]
 
 #Epochs and batches
 EPOCHS: 20
@@ -50,7 +50,7 @@ ANCHOR_SCALES: [8,16,32]
 ANCHOR_RATIOS: [0.5,1,2]
 STRIDE: 16 #Stride for VGG16 model
 RPN_MAX_SAMPLES: 256
-RPN_CONF_THRESH: 0.0
+RPN_CONF_THRESH: 0.5
 RPN_NMS_THRESH: 0.7
 
 #ROI Network
@@ -60,8 +60,9 @@ ROI_MAX_SAMPLES: 512
 ROI_RATIO: 0.25
 POS_PROP_THRESH: 0.5
 NEG_PROP_THRESH: [0.5,0.1] #Neg prop thresh is a two element list with first element as high thresh and the other as low thresh
-ROI_CONF_THRESH: 0.5
-ROI_NMS_THRESH: 0.7
+ROI_CONF_THRESH: 0.05
+ROI_NMS_THRESH: 0.4
+ROI_WEIGHTS: [10.0,10.0,5.0,5.0]
 
 #Train
 SEPERATE_TRAIN: False

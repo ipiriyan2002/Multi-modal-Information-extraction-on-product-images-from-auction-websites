@@ -73,9 +73,9 @@ class CordDataset(tu.data.Dataset):
         self.pad = pad
         self.transform = transform
         
-        self.mean = torch.tensor([0.0,0.0,0.0])
-        self.std = torch.tensor([0.0,0.0,0.0])
-        self.pixel_count = 0
+        #self.mean = torch.tensor([0.0,0.0,0.0])
+        #self.std = torch.tensor([0.0,0.0,0.0])
+        #self.pixel_count = 0
         
         #Defining the split dict, with each value contains a list containing file names
         self.splitDict = {
@@ -88,8 +88,8 @@ class CordDataset(tu.data.Dataset):
         #Get the dataset
         self.gt_imgs, self.gt_targets = self.getDataset()
         
-        self.mean = self.mean / self.pixel_count
-        self.std = torch.sqrt((self.std / self.pixel_count) - (self.mean ** 2))
+        #self.mean = self.mean / self.pixel_count
+        #self.std = torch.sqrt((self.std / self.pixel_count) - (self.mean ** 2))
         
     
     def __len__(self):
@@ -219,10 +219,10 @@ class CordDataset(tu.data.Dataset):
              #Append tensor form from numpy array
             
             #Add the pixel_counts to calculate mean and std for dataset
-            self.mean += img_arr.sum(axis=[1,2])
-            self.std += (img_arr ** 2).sum(axis=[1,2])
+            #self.mean += img_arr.sum(axis=[1,2])
+            #self.std += (img_arr ** 2).sum(axis=[1,2])
             
-            self.pixel_count += img_arr.shape[1] * img_arr.shape[2]
+            #self.pixel_count += img_arr.shape[1] * img_arr.shape[2]
             
             #Label processing
             boxes, classes = self.getTargets(gt)

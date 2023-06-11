@@ -1,5 +1,5 @@
 from Utils.utils import load_config_file
-import os
+import os, yaml
 
 
 class ConfigLoader:
@@ -54,3 +54,7 @@ class ConfigLoader:
     def setValue(self, key, value):
         
         self.final_dict[key] = value
+
+    def writeFinalConfig(self, save_dir):
+        with open(save_dir, 'w') as f:
+            _ = yaml.dump(self.final_dict, f)
