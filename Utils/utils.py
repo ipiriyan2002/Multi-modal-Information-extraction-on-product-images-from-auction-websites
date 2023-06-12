@@ -14,12 +14,8 @@ DATA_FOLDER_PATH = "./Data"
 
 # Load the config file given the name of the file
 def load_config_file(fname):
-    if CONFIG_FOLDER_PATH in fname or os.path.exists(fname):
-        file_path = fname
-    else:
-        file_path = os.path.join(CONFIG_FOLDER_PATH, fname)
         
-    with open(file_path) as f:
+    with open(fname) as f:
         read_config = yaml.safe_load(f)
     
     return read_config

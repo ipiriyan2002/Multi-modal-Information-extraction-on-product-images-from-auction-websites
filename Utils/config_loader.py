@@ -6,7 +6,7 @@ class ConfigLoader:
     """
     Loads the base configs and the given configs into one dict overwriting base setting from given config file
     """
-    def __init__(self, config,base_model="_base_model_config.yaml", base_dataset="_base_dataset_paths.yaml"):
+    def __init__(self, config,base_model="./Configs/_base_model_config.yaml", base_dataset="./Configs/_base_dataset_paths.yaml"):
         file_ext = config.split(".")[-1]
         assert file_ext == "yaml", f"Expected yaml file got {file_ext}"
         

@@ -33,7 +33,7 @@ def isBox(box):
     hasHW = ((box[3]-box[1]) > 0) and ((box[2]-box[0]) > 0)
     return hasArea and hasHW
 
-def packTargets(gt_bboxes, gt_classes):
+def packTargets(gt_bboxes, gt_classes, gt_texts=None):
     
     gt_targets = []
     
@@ -44,6 +44,11 @@ def packTargets(gt_bboxes, gt_classes):
         gt_target['image_id'] = torch.tensor([index])
         gt_target['area'] = (bboxes[...,2] - bboxes[...,0]) * (bboxes[...,3] - bboxes[...,1])
         gt_target['iscrowd'] = (gt_classes[index] < 0).type(torch.int64)
+
+        if not(gt_texts == None):
+            gt_target["text"] = gt_texts[index]
+
+
         gt_targets.append(gt_target)
     
     return gt_targets

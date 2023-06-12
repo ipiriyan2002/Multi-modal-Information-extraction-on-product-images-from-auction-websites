@@ -1,0 +1,35 @@
+#Dataset and split
+DATASET: cordv2
+SPLIT: train
+NUM_CLASSES: 2
+CLASS_TYPE: price
+
+MIN_SIZE: 800
+MAX_SIZE: 1000
+TRANSFORMS: [totensor]
+
+#Epoch and Batch
+BATCH: 1
+VAL_BATCH: 1
+EPOCHS: 40
+VAL_EPOCH: 2
+SAVE_ENTRY: 20
+LOG_ENTRY: 2
+
+#Optimizer
+L_RATE: 0.0085
+
+#Scheduler
+STEP_SIZE: 20
+GAMMA: 0.1
+
+
+#Save paths
+SAVE_PATH_CHECKPOINT: ./Saved_Models/cordv2_price_E40_lr0.0085/
+SAVE_PATH_BEST: ./Saved_Models/cordv2_price_E40_lr0.0085/Best_Model/
+
+#Anchor and proposal generation
+ANCHOR_SCALES: [8,16,32]
+
+#Train
+NUM_WORKERS: 0

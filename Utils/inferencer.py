@@ -1,11 +1,12 @@
-from mmocr.apis import TextDetInferencer, TextRecInferencer
+from mmocr.apis import MMOCRInferencer, TextDetInferencer, TextRecInferencer
 from mmocr.utils import crop_img, poly2bbox, bbox2poly
 from PIL import Image
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-
+import os
+import copy
 
 class Inferencer:
     def __init__(self, det_model="DBnet", det_weights=None, rec_model="satrn", rec_weights=None, output_dir="./inference/", print_vis=True, device=torch.device("cuda")):
@@ -17,6 +18,13 @@ class Inferencer:
         
         self.det_model = self.getDetModel(det_model, det_weights, device)
         self.rec_model = self.getRecModel(rec_model, rec_weights, device)
+
+        if (isinstance(det_model, str)):
+            self.ocr_model = MMOCRInferencer(det=det_model, det_weights=det_weights, rec=rec_model, rec_weights=rec_weights, device=device)
+            self.useFullOCR = True
+        else:
+            self.ocr_model = None
+            self.useFullOCR = False
         self.output_dir = output_dir
         self.print_vis = print_vis
         self.device = device
@@ -48,13 +56,12 @@ class Inferencer:
         out_list = []
         
         for inst in preds:
-            poly = inst["polygons"]
+            bboxes = [poly2bbox(quad).tolist() for quad in inst["det_polygons"]]
+            scores = inst["det_scores"]
+            texts = inst["rec_texts"]
+            text_scores = inst["rec_scores"]
             
-            quad = bbox2poly(poly2bbox(poly)).tolist()
-            
-            scores = inst["scores"]
-            
-            final_dict = dict(boxes=quad, scores=scores)
+            final_dict = dict(boxes=bboxes, scores=scores, text=texts,text_scores=text_scores)
             
             out_list.append(final_dict)
         
@@ -68,7 +75,11 @@ class Inferencer:
         out_list = []
         
         for inst in out:
-            final_dict = dict(boxes=bbox2poly(out['boxes']), scores=out["scores"])
+
+            boxes = [bbox2poly(box.cpu()).tolist() for box in inst['boxes']]
+            scores = [score.cpu() for score in inst["scores"]]
+
+            final_dict = dict(boxes=boxes, scores=scores)
             out_list.append(final_dict)
         
         return out_list
@@ -81,22 +92,25 @@ class Inferencer:
             pass
         
         for index, (image, out) in enumerate(zip(images, outs)):
-            h, w = image.shape[-2:]
-            
+            image = image.permute(1,2,0).cpu().numpy()
+            print(image)
+            h,w = image.shape[:2]
+
+            image = Image.fromarray((image*255).astype(np.uint8), 'RGB')
             img = Image.new("RGB", (w+w, h))
             
             img.paste(image, (0,0))
             img.paste(image, (w,0))
             
             fig, ax = plt.subplots(figsize=(8,8))
-            plt.axis("off")
+            ax.axis("off")
             
             plt.imshow(img)
             
             for index, box in enumerate(out["boxes"]):
                 box_score = out["scores"][index]
                 text = out["text"][index]
-                text_score = out["text_score"][index]
+                text_score = out["text_scores"][index]
                 
                 x1,y1,_,_,x3,y3,_,_ = box
                 
@@ -107,7 +121,7 @@ class Inferencer:
                 text_color = "red" if text_score < 0.5 else "green"
                 
                 rect1 = patches.Rectangle((x1,y1), width, height, fill=None, fc=box_color, ec=box_color)
-                rect2 = patches.Rectangle((w+x1,y1), width, height, fill=None, fc=box_color, ec=box_color)
+                rect2 = patches.Rectangle((w+x1,y1), width, height, fc=box_color, ec=box_color)
                 
                 
                 ax.add_patch(rect1)
@@ -115,7 +129,7 @@ class Inferencer:
             
                 ax.text(w+x1, y1, text, color=text_color, va="bottom", ha="center")
             
-            plt.save_fig(self.output_dir+f"image_{index}.jpg")
+            plt.savefig(self.output_dir+f"image_{index}.jpg")
             
             plt.show()
         
@@ -126,33 +140,37 @@ class Inferencer:
             images = [image]
         else:
             images = image
-            
-        if isinstance(self.det_model, TextDetInferencer):
-            out = self.det_model(images)
+
+        images_copy = copy.deepcopy(images)
+
+        if self.useFullOCR:
+            mod_images = [img.permute(1,2,0).cpu().numpy() for img in images]
+            out = self.ocr_model(mod_images)
             out = self.process_det_ocr_out(out)
         else:
             out = self.det_model(images)
             out = self.process_det_out(out)
             
             
-        for index,(image, preds) in enumerate(zip(images, out)):
-            cropped_proposals = []
-            
-            for box in pred["boxes"]:
-                cropped_proposals.append(crop_img(image, box))
-            
-            preds = self.rec_model(cropped_proposals)["predictions"]
-            
-            all_text = [pred["text"] for pred in preds]
-            all_scores = [pred["scores"] for pred in preds]
-            
-            out[index]["text"] = all_text
-            out[index]["text_scores"] = all_scores
+            for index,(image, preds) in enumerate(zip(images, out)):
+                cropped_proposals = []
+                image = image.permute(1,2,0).cpu().numpy()
+
+                for box in preds["boxes"]:
+                    cropped_proposals.append(crop_img(image, box))
+
+                preds = self.rec_model(cropped_proposals)["predictions"]
+
+                all_text = [pred["text"] for pred in preds]
+                all_scores = [pred["scores"] for pred in preds]
+
+                out[index]["text"] = all_text
+                out[index]["text_scores"] = all_scores
         
         
         
         if self.print_vis:
-            self.save_vis(images, out)
+            self.save_vis(images_copy, out)
             
         print(out)
         return out

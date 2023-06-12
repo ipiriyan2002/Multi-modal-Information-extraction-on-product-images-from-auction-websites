@@ -53,7 +53,7 @@ def train_epoch(model, optimizer, train_loader, device, debug=False):
         optimizer.zero_grad()
         batch_no += 1
         images = [img.to(device) for img in images]
-        targets = [{k:v.to(device) for k,v in target.items()} for target in targets]
+        targets = [{k:(v.to(device) if not(isinstance(v, list)) else v) for k,v in target.items()} for target in targets]
             
         with torch.cuda.amp.autocast():
             out_losses, out_preds = model(images, targets)

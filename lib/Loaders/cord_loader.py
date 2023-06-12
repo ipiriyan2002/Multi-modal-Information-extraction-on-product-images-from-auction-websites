@@ -177,6 +177,7 @@ class CordDataset(tu.data.Dataset):
         """
         boxes = []
         classes = []
+        texts = []
         vline = labels["valid_line"]
         #Get original width and height of image
         #og_width, og_height = labels['meta']['image_size']['width'], labels['meta']['image_size']['height']
@@ -192,8 +193,9 @@ class CordDataset(tu.data.Dataset):
                     boxes.append(box)
                     category = self.getCategory(line['category'])
                     classes.append(self.cls_dict[category])
+                    texts.append(word['text'])
 
-        return boxes, classes
+        return boxes, classes, texts
         
     def getDataset(self):
         """
@@ -207,7 +209,7 @@ class CordDataset(tu.data.Dataset):
         gt_imgs = []
         gt_bboxes = []
         gt_classes = []
-        
+        gt_texts = []
         #Run through all pairs
         for pair in list_of_pairs:
             img, gt = pair
@@ -225,13 +227,14 @@ class CordDataset(tu.data.Dataset):
             #self.pixel_count += img_arr.shape[1] * img_arr.shape[2]
             
             #Label processing
-            boxes, classes = self.getTargets(gt)
+            boxes, classes, texts = self.getTargets(gt)
             #Append tensor form of boxes and classes with dtype set to float32
             #Only add images with more than one ground truth image
             if len(boxes) > 0:
                 gt_imgs.append(img_arr)
                 gt_bboxes.append(torch.as_tensor(boxes, dtype=torch.float32))
                 gt_classes.append(torch.as_tensor(classes, dtype=torch.int64))
+                gt_texts.append(texts)
             
             
         #Pad boxes and classes such that all elements are of same shape
@@ -241,7 +244,7 @@ class CordDataset(tu.data.Dataset):
             gt_classes = pad_sequence(gt_classes, batch_first=True, padding_value=-1)
         
         #Putting all the data into dictionary format
-        gt_targets = lu.packTargets(gt_bboxes, gt_classes)
+        gt_targets = lu.packTargets(gt_bboxes, gt_classes, gt_texts)
         
         return gt_imgs, gt_targets
 
