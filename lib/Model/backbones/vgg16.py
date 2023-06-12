@@ -43,6 +43,9 @@ class VGG16_BACKBONE():
 
         #Not using last layer
         del classifier_list[6]
+        #And not using drop out layer
+        del classifier_list[5]
+        del classifier_list[2]
 
         classifier = nn.Sequential(*classifier_list)
         out_channels = 4096

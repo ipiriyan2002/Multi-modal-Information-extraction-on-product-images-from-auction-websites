@@ -79,9 +79,7 @@ class FRCNNTransformer(torch.nn.Module):
             #Resize boxes
             if not(targets is None):
                 boxes = final_targets[index]['boxes']
-                boxes = self.resize_boxes(boxes, orig_shape, new_shape)
-
-                final_targets[index]['boxes'] = boxes
+                final_targets[index]['boxes'] = self.resize_boxes(boxes, orig_shape, new_shape)
                 
             final_images.append(image)
         

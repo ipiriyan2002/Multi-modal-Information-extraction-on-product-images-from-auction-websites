@@ -68,10 +68,13 @@ class ProposalMatcher:
         if self.class_agnostic:
             labels[foreground_where] = 1
         else:
-            foreground_where_indexes = foreground_where.type(torch.int64).view(-1, 1)
-            target_classes = classes.view(1,-1).expand(foreground_where_indexes.size(0),-1)
-            gathered_classes = torch.gather(target_classes, 0, foreground_where_indexes)
-            labels[foreground_where_indexes.view(-1)] = gathered_classes.view(-1)
+            #foreground_where_indexes = foreground_where.type(torch.int64).view(-1, 1)
+            #target_classes = classes.view(1,-1).expand(foreground_where.size(0),-1)
+            #gathered_classes = torch.gather(target_classes, 0, foreground_where_indexes)
+            #labels[foreground_where_indexes.view(-1)] = gathered_classes.view(-1)
+            foreground_indexes = max_iou_per_proposal_indexes[foreground_where]
+            labels[foreground_where] = classes[foreground_indexes]
+            
 
         #Background labels and indexes
         background_where = torch.logical_and(max_iou_per_proposal < self.neg_thresh, max_iou_per_proposal >= self.min_neg_thresh)
@@ -88,10 +91,11 @@ class ProposalMatcher:
             if self.class_agnostic:
                 labels[low_where] = 1
             else:
-                low_where_indexes = low_where.type(torch.int64).view(-1, 1)
-                target_classes = classes.view(1,-1).expand(low_where_indexes.size(0),-1)
-                gathered_classes = torch.gather(target_classes, 0, low_where_indexes)
-                labels[low_where_indexes.view(-1)] = gathered_classes.view(-1)
+                #low_where_indexes = low_where.type(torch.int64).view(-1, 1)
+                #target_classes = classes.view(1,-1).expand(low_where_indexes.size(0),-1)
+                #gathered_classes = torch.gather(target_classes, 0, low_where_indexes)
+                #labels[low_where_indexes.view(-1)] = gathered_classes.view(-1)
+                labels[low_where] = classes[low_indexes]
             max_iou_per_proposal_indexes[low_where] = low_indexes
 
         return labels, max_iou_per_proposal_indexes

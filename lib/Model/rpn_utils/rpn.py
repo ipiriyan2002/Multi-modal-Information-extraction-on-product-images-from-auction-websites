@@ -26,8 +26,8 @@ class RegionProposalNetwork(nn.Module):
                  img_max_size=1000,
                  conf_thresh=0.0,
                  nms_thresh=0.7,
-                 pre_nms_k={'TRAIN':12000, 'TEST': 6000},
-                 post_nms_k={'TRAIN':2000, 'TEST': 300}
+                 pre_nms_k={'TRAIN':2000, 'TEST': 1000},
+                 post_nms_k={'TRAIN':2000, 'TEST': 1000}
                 ):
         
         super(RegionProposalNetwork, self).__init__()

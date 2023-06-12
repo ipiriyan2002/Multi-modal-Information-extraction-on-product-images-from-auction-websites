@@ -23,12 +23,12 @@ class ROINetwork(torch.nn.Module):
                  img_max_size=1000,
                  pos_prop_iou_thresh = 0.7, 
                  neg_prop_iou_thresh = 0.3, 
-                 max_samples=128,
+                 max_samples=512,
                  ratio_pos_neg=0.25,
-                 roi_post_nms_k= 200,
+                 roi_post_nms_k= 100,
                  roi_conf_thresh=0.05,
                  roi_nms_thresh=0.5,
-                 weights=(1.0,1.0,1.0,1.0)
+                 weights=(10.0,10.0,5.0,5.0)
                 ):
         
         super(ROINetwork, self).__init__()
@@ -176,14 +176,14 @@ class ROINetwork(torch.nn.Module):
         scores = [score[keep] for score, keep in zip(scores, keeps)]
         labels = [label[keep] for label, keep in zip(labels, keeps)]
         
-        #remove small boxes
-        keeps = [ops.remove_small_boxes(box, 1e-3) for box in boxes]
+        #remove boxes with low score
+        keeps = [torch.where(score > self.roi_conf_thresh)[0] for score in scores]
         boxes = [box[keep] for box, keep in zip(boxes, keeps)]
         scores = [score[keep] for score, keep in zip(scores, keeps)]
         labels = [label[keep] for label, keep in zip(labels, keeps)]
         
-        #remove boxes with low score
-        keeps = [torch.where(score > self.roi_conf_thresh)[0] for score in scores]
+        #remove small boxes
+        keeps = [ops.remove_small_boxes(box, 1e-3) for box in boxes]
         boxes = [box[keep] for box, keep in zip(boxes, keeps)]
         scores = [score[keep] for score, keep in zip(scores, keeps)]
         labels = [label[keep] for label, keep in zip(labels, keeps)]
@@ -270,8 +270,8 @@ class ROINetwork(torch.nn.Module):
             boxes = self.generateProposals(out_locs.detach(), roi_props.view(-1,4))
             boxes = boxes.split(proposals_per_image, 0)
 
-            scores = scores_probs.flatten().split(proposals_per_image, 0)
-            labels = labels.flatten().split(proposals_per_image, 0)
+            scores = scores_probs.reshape(-1).split(proposals_per_image, 0)
+            labels = labels.reshape(-1).split(proposals_per_image, 0)
 
             boxes, scores, labels = self.post_process(boxes, scores, labels, images)
             boxes = self.resize_boxes(feat_maps, orig_img_sizes, boxes)
